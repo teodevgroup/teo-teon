@@ -500,7 +500,7 @@ impl Value {
         mem::replace(self, Value::Null)
     }
 
-    pub(crate) fn recip(&self) -> f64 {
+    pub fn recip(&self) -> f64 {
         match self {
             Value::I32(n) => (*n as f64).recip(),
             Value::I64(n) => (*n as f64).recip(),
@@ -511,7 +511,7 @@ impl Value {
         }
     }
 
-    pub(crate) fn fmt_for_display(&self) -> Cow<str> {
+    pub fn fmt_for_display(&self) -> Cow<str> {
         match self {
             Value::Null => Cow::Borrowed("null"),
             Value::Bool(v) => if *v { Cow::Borrowed("true") } else { Cow::Borrowed("false") },
