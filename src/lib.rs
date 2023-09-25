@@ -4,7 +4,8 @@ pub mod value;
 pub mod index;
 pub mod json;
 pub mod from;
-pub mod macros;
+#[macro_use]
+mod macros;
 pub mod pipeline;
 pub mod error;
 pub mod result;

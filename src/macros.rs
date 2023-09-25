@@ -27,12 +27,12 @@ macro_rules! teon {
 
     // Done with trailing comma.
     (@array [$($elems:expr,)*]) => {
-        crate::teon_vec![$($elems,)*]
+        crate::macros::teon_vec![$($elems,)*]
     };
 
     // Done without trailing comma.
     (@array [$($elems:expr),*]) => {
-        crate::teon_vec![$($elems),*]
+        crate::macros::teon_vec![$($elems),*]
     };
 
     // Next element is `null`.
@@ -192,23 +192,23 @@ macro_rules! teon {
     //////////////////////////////////////////////////////////////////////////
 
     (null) => {
-        $crate::prelude::Value::Null
+        $crate::value::Value::Null
     };
 
     ([]) => {
-        $crate::prelude::Value::Vec(vec![])
+        $crate::value::Value::Vec(vec![])
     };
 
     ([ $($tt:tt)+ ]) => {
-        $crate::prelude::Value::Vec($crate::teon!(@array [] $($tt)+))
+        $crate::value::Value::Vec($crate::teon!(@array [] $($tt)+))
     };
 
     ({}) => {
-        $crate::prelude::Value::HashMap(std::collections::HashMap::new())
+        $crate::value::Value::HashMap(std::collections::HashMap::new())
     };
 
    ({ $($tt:tt)+ }) => {
-        $crate::prelude::Value::HashMap({
+        $crate::value::Value::HashMap({
             let mut map = std::collections::HashMap::new();
             teon!(@object map () ($($tt)+) ($($tt)+));
             map
@@ -218,7 +218,7 @@ macro_rules! teon {
     // Any Into<Value> type.
     // Must be below every other rule.
     ($other:expr) => {
-        $crate::prelude::Value::from($other)
+        $crate::value::Value::from($other)
     };
 }
 
