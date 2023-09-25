@@ -11,10 +11,12 @@ use chrono::{NaiveDate, SecondsFormat};
 use regex::Regex;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
-use crate::pipeline::TeonPipeline;
+use super::pipeline::TeonPipeline;
 use super::index::Index;
 use super::range::TeonRange;
 use super::file::TeonFile;
+use super::error::Error;
+use super::result::Result;
 
 // Code from this file is inspired from serde json
 // https://github.com/serde-rs/json/blob/master/src/value/mod.rs
@@ -568,27 +570,27 @@ impl PartialOrd for Value {
 
 fn check_operand(lhs: &Value, name: &str) -> Result<()> {
     if !lhs.is_number() {
-        return Err(Error::internal_server_error(format!("{}: operand is not number", name)));
+        return Err(Error::new(format!("{}: operand is not number", name)));
     }
     Ok(())
 }
 
 fn check_operands(lhs: &Value, rhs: &Value, name: &str) -> Result<()> {
     if !lhs.is_number() {
-        return Err(Error::internal_server_error(format!("{}: lhs is not number", name)));
+        return Err(Error::new(format!("{}: lhs is not number", name)));
     }
     if !rhs.is_number() {
-        return Err(Error::internal_server_error(format!("{}: rhs is not number", name)));
+        return Err(Error::new(format!("{}: rhs is not number", name)));
     }
     Ok(())
 }
 
 fn check_operands_int(lhs: &Value, rhs: &Value, name: &str) -> Result<()> {
     if !lhs.is_i() {
-        return Err(Error::internal_server_error(format!("{}: lhs is not number", name)));
+        return Err(Error::new(format!("{}: lhs is not number", name)));
     }
     if !rhs.is_i() {
-        return Err(Error::internal_server_error(format!("{}: rhs is not number", name)));
+        return Err(Error::new(format!("{}: rhs is not number", name)));
     }
     Ok(())
 }
