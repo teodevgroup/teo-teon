@@ -1,0 +1,18 @@
+[package]
+name = "teo-teon"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+chrono = { version = "0.4.31", features = ["serde"] }
+regex = "1.9.5"
+bigdecimal = "=0.3.1"
+bson = { version = "2.6.0", features = ["chrono-0_4", "serde_with"] }
+getrandom = { version = "0.2.10", features = ["js"] }
+indexmap = "2.0.0"
+maplit = "1.0.2"
+itertools = "0.11.0"
