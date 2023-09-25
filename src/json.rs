@@ -62,9 +62,6 @@ impl Into<JsonValue> for Value {
                 }
                 JsonValue::Object(map)
             }
-            Value::Object(_obj) => {
-                panic!("Cannot convert object into json. Use specific method instead.")
-            }
             _ => {
                 panic!("Cannot convert into json.")
             }

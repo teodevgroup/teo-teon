@@ -8,12 +8,12 @@ use chrono::prelude::{DateTime, Utc};
 use indexmap::IndexMap;
 use bson::oid::ObjectId;
 use chrono::{NaiveDate, SecondsFormat};
-use maplit::hashmap;
 use regex::Regex;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
+use crate::pipeline::TeonPipeline;
 use super::index::Index;
-use super::range::Range;
+use super::range::TeonRange;
 use super::file::TeonFile;
 
 // Code from this file is inspired from serde json
@@ -117,7 +117,7 @@ pub enum Value {
 
     /// Represents a Teon range.
     ///
-    Range(Range),
+    Range(TeonRange),
 
     /// Represents a Teon tuple.
     ///
@@ -125,7 +125,7 @@ pub enum Value {
 
     /// Represents a Teon pipeline.
     ///
-    Pipeline(Pipeline),
+    Pipeline(TeonPipeline),
 
     /// Raw enum choice.
     ///
@@ -139,46 +139,12 @@ pub enum Value {
     ///
     RegExp(Regex),
 
-    /// Represents a Teon object.
-    ///
-    Object(Object),
-
     /// Represents a file.
     ///
     File(TeonFile),
 }
 
 impl Value {
-
-    pub(crate) fn number_from_i32(num: i32, r#type: &FieldType) -> Value {
-        match r#type {
-            FieldType::I32 => Value::I32(num as i32),
-            _ => panic!(),
-        }
-    }
-
-    pub(crate) fn number_from_f64(num: f64, r#type: &FieldType) -> Value {
-        match r#type {
-            FieldType::F32 => Value::F32(num as f32),
-            FieldType::F64 => Value::F64(num),
-            _ => panic!()
-        }
-    }
-    pub(crate) fn number_from_f32(num: f32, r#type: &FieldType) -> Value {
-        match r#type {
-            FieldType::F32 => Value::F32(num),
-            FieldType::F64 => Value::F64(num as f64),
-            _ => panic!()
-        }
-    }
-
-    pub(crate) fn number_from_i64(num: i64, r#type: &FieldType) -> Value {
-        match r#type {
-            FieldType::I32 => Value::I32(num as i32),
-            FieldType::I64 => Value::I64(num),
-            _ => panic!()
-        }
-    }
 
     pub fn get<I: Index>(&self, index: I) -> Option<&Value> {
         index.index_into(self)
@@ -438,17 +404,6 @@ impl Value {
         }
     }
 
-    pub fn is_object(&self) -> bool {
-        self.as_object().is_some()
-    }
-
-    pub fn as_object(&self) -> Option<&Object> {
-        match self {
-            Value::Object(o) => Some(o),
-            _ => None,
-        }
-    }
-
     pub fn is_null(&self) -> bool {
         self.as_null().is_some()
     }
@@ -486,7 +441,7 @@ impl Value {
         self.as_range().is_some()
     }
 
-    pub fn as_range(&self) -> Option<&Range> {
+    pub fn as_range(&self) -> Option<&TeonRange> {
         match self {
             Value::Range(r) => Some(r),
             _ => None,
@@ -516,10 +471,10 @@ impl Value {
     }
 
     pub fn is_pipeline(&self) -> bool {
-        self.as_range().is_some()
+        self.as_pipeline().is_some()
     }
 
-    pub fn as_pipeline(&self) -> Option<&Pipeline> {
+    pub fn as_pipeline(&self) -> Option<&TeonPipeline> {
         match self {
             Value::Pipeline(p) => Some(p),
             _ => None,
@@ -534,36 +489,6 @@ impl Value {
         match self {
             Value::RegExp(r) => Some(r),
             _ => None,
-        }
-    }
-
-    // resolve pipeline as value
-    pub(crate) async fn resolve(&self, context: PipelineCtx<'_>) -> Result<Value> {
-        match self {
-            Value::Pipeline(p) => p.process(context).await,
-            Value::HashMap(map) => {
-                let mut new_map = hashmap!{};
-                for (key, value) in map {
-                    if let Some(p) = value.as_pipeline() {
-                        new_map.insert(key.clone(), p.process(context.clone()).await?);
-                    } else {
-                        new_map.insert(key.clone(), value.clone());
-                    }
-                }
-                Ok(Value::HashMap(new_map))
-            }
-            Value::Vec(vec) => {
-                let mut new_vec = vec![];
-                for val in vec {
-                    if let Some(p) = val.as_pipeline() {
-                        new_vec.push(p.process(context.clone()).await?);
-                    } else {
-                        new_vec.push(val.clone());
-                    }
-                }
-                Ok(Value::Vec(new_vec))
-            }
-            _ => Ok(self.clone()),
         }
     }
 
@@ -587,32 +512,27 @@ impl Value {
     pub(crate) fn fmt_for_display(&self) -> Cow<str> {
         match self {
             Value::Null => Cow::Borrowed("null"),
-            Value::Bool(v) => if *v {
-                Cow::Borrowed("true")
-            } else {
-                Cow::Borrowed("false")
-            },
+            Value::Bool(v) => if *v { Cow::Borrowed("true") } else { Cow::Borrowed("false") },
             Value::I32(i) => Cow::Owned(i.to_string()),
             Value::I64(i) => Cow::Owned(i.to_string()),
             Value::F32(f) => Cow::Owned(f.to_string()),
             Value::F64(f) => Cow::Owned(f.to_string()),
-            Value::Decimal(d) => Cow::Owned(d.to_string()),
+            Value::Decimal(d) => Cow::Owned(format!("Decimal(\"{}\")", d.to_string())),
             Value::ObjectId(o) => Cow::Owned(format!("ObjectId(\"{}\")", o.to_hex())),
             Value::String(s) => Cow::Owned(format!("\"{}\"", s.replace("\"", "\\\""))),
-            Value::Date(d) => Cow::Owned(d.to_string()),
-            Value::DateTime(dt) => Cow::Owned(dt.to_rfc3339_opts(SecondsFormat::Millis, true)),
+            Value::Date(d) => Cow::Owned(format!("Date(\"{}\")", d.to_string())),
+            Value::DateTime(dt) => Cow::Owned(format!("DateTime(\"{}\")", dt.to_rfc3339_opts(SecondsFormat::Millis, true))),
             Value::Vec(v) => Cow::Owned("[".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + "]"),
             Value::HashMap(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
-            Value::BTreeMap(_) => unreachable!(),
-            Value::IndexMap(_) => unreachable!(),
+            Value::BTreeMap(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
+            Value::IndexMap(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
             Value::Range(_) => unreachable!(),
-            Value::Tuple(_) => unreachable!(),
+            Value::Tuple(v) => Cow::Owned("(".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + ")"),
             Value::Pipeline(_) => unreachable!(),
             Value::RawEnumChoice(v, _) => Cow::Owned(format!(".{}", v.as_str())),
             Value::RawOptionChoice(_) => unreachable!(),
             Value::RegExp(_) => unreachable!(),
-            Value::Object(_) => unreachable!(),
-            Value::File(f) => Cow::Owned(f.filename.to_owned()),
+            Value::File(f) => Cow::Owned(format!("File(\"{}\")", f.filename)),
         }
     }
 }
@@ -641,7 +561,6 @@ impl PartialOrd for Value {
             (Vec(s), Vec(o)) => s.partial_cmp(o),
             (HashMap(_s), HashMap(_o)) => None,
             (BTreeMap(_s), BTreeMap(_o)) => None,
-            (Object(_s), Object(_o)) => None,
             _ => None,
         }
     }
