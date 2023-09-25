@@ -27,12 +27,12 @@ macro_rules! teon {
 
     // Done with trailing comma.
     (@array [$($elems:expr,)*]) => {
-        crate::macros::teon_vec![$($elems,)*]
+        teo_teon::teon_vec![$($elems,)*]
     };
 
     // Done without trailing comma.
     (@array [$($elems:expr),*]) => {
-        crate::macros::teon_vec![$($elems),*]
+        teo_teon::teon_vec![$($elems),*]
     };
 
     // Next element is `null`.
