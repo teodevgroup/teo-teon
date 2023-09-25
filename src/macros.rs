@@ -77,7 +77,7 @@ macro_rules! teon {
 
     // Unexpected token after most recent element.
     (@array [$($elems:expr),*] $unexpected:tt $($rest:tt)*) => {
-        teon_unexpected!($unexpected)
+        teo_teon::teon_unexpected!($unexpected)
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -101,7 +101,7 @@ macro_rules! teon {
 
     // Current entry followed by unexpected token.
     (@object $object:ident [$($key:tt)+] ($value:expr) $unexpected:tt $($rest:tt)*) => {
-        teon_unexpected!($unexpected);
+        teo_teon::teon_unexpected!($unexpected);
     };
 
     // Insert the last entry without trailing comma.
@@ -160,13 +160,13 @@ macro_rules! teon {
     // Misplaced colon. Trigger a reasonable error message.
     (@object $object:ident () (: $($rest:tt)*) ($colon:tt $($copy:tt)*)) => {
         // Takes no arguments so "no rules expected the token `:`".
-        teon_unexpected!($colon);
+        teo_teon::teon_unexpected!($colon);
     };
 
     // Found a comma inside a key. Trigger a reasonable error message.
     (@object $object:ident ($($key:tt)*) (, $($rest:tt)*) ($comma:tt $($copy:tt)*)) => {
         // Takes no arguments so "no rules expected the token `,`".
-        teon_unexpected!($comma);
+        teo_teon::teon_unexpected!($comma);
     };
 
     // Key is fully parenthesized. This avoids clippy double_parens false
@@ -177,7 +177,7 @@ macro_rules! teon {
 
     // Refuse to absorb colon token into key expression.
     (@object $object:ident ($($key:tt)*) (: $($unexpected:tt)+) $copy:tt) => {
-        teon_expect_expr_comma!($($unexpected)+);
+        teo_teon::teon_expect_expr_comma!($($unexpected)+);
     };
 
     // Munch a token into the current key.
