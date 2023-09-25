@@ -1,6 +1,6 @@
 [package]
 name = "teo-teon"
-version = "0.0.58-alpha.2"
+version = "0.0.58-alpha.3"
 edition = "2021"
 description = "Teo object notation."
 license = "Apache-2.0"

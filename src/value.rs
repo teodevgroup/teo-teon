@@ -131,11 +131,11 @@ pub enum Value {
 
     /// Raw enum choice.
     ///
-    RawEnumChoice(String, Option<Vec<(Option<String>, Value)>>),
+    RawEnumVariant(String, Option<Vec<(Option<String>, Value)>>),
 
     /// Raw option choice
     ///
-    RawOptionChoice(u32),
+    RawOptionVariant(u32),
 
     /// Regular expression
     ///
@@ -246,10 +246,10 @@ impl Value {
         }
     }
 
-    pub fn str_from_string_or_raw_enum_choice(&self) -> Option<&str> {
+    pub fn str_from_string_or_raw_enum_variant(&self) -> Option<&str> {
         match self {
             Value::String(s) => Some(s),
-            Value::RawEnumChoice(s, _) => Some(s),
+            Value::RawEnumVariant(s, _) => Some(s),
             _ => None,
         }
     }
@@ -417,24 +417,24 @@ impl Value {
         }
     }
 
-    pub fn is_raw_enum_choice(&self) -> bool {
-        self.as_raw_enum_choice().is_some()
+    pub fn is_raw_enum_variant(&self) -> bool {
+        self.as_raw_enum_variant().is_some()
     }
 
-    pub fn as_raw_enum_choice(&self) -> Option<&str> {
+    pub fn as_raw_enum_variant(&self) -> Option<&str> {
         match self {
-            Value::RawEnumChoice(s, _) => Some(s.as_str()),
+            Value::RawEnumVariant(s, _) => Some(s.as_str()),
             _ => None,
         }
     }
 
-    pub fn is_raw_option_choice(&self) -> bool {
-        self.as_raw_option_choice().is_some()
+    pub fn is_raw_option_variant(&self) -> bool {
+        self.as_raw_option_variant().is_some()
     }
 
-    pub fn as_raw_option_choice(&self) -> Option<u32> {
+    pub fn as_raw_option_variant(&self) -> Option<u32> {
         match self {
-            Value::RawOptionChoice(o) => Some(*o),
+            Value::RawOptionVariant(o) => Some(*o),
             _ => None,
         }
     }
@@ -531,8 +531,8 @@ impl Value {
             Value::Range(_) => unreachable!(),
             Value::Tuple(v) => Cow::Owned("(".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + ")"),
             Value::Pipeline(_) => unreachable!(),
-            Value::RawEnumChoice(v, _) => Cow::Owned(format!(".{}", v.as_str())),
-            Value::RawOptionChoice(_) => unreachable!(),
+            Value::RawEnumVariant(v, _) => Cow::Owned(format!(".{}", v.as_str())),
+            Value::RawOptionVariant(_) => unreachable!(),
             Value::RegExp(_) => unreachable!(),
             Value::File(f) => Cow::Owned(format!("File(\"{}\")", f.filename)),
         }
@@ -754,7 +754,7 @@ impl PartialEq for Value {
             (HashMap(s), HashMap(o)) => s == o,
             (IndexMap(s), IndexMap(o)) => s == o,
             (BTreeMap(s), BTreeMap(o)) => s == o,
-            (RawEnumChoice(s1, _a1), RawEnumChoice(s2, a2)) => s1 == s2 && a2 == a2,
+            (RawEnumVariant(s1, a1), RawEnumVariant(s2, a2)) => s1 == s2 && a1 == a2,
             _ => false,
         }
     }
