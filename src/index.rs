@@ -116,10 +116,11 @@ impl<'a> Display for Type<'a> {
             Value::Range(_) => formatter.write_str("range"),
             Value::Tuple(_) => formatter.write_str("tuple"),
             Value::Pipeline(_) => formatter.write_str("pipeline"),
-            Value::RawEnumVariant(_, __) => formatter.write_str("raw enum variant"),
-            Value::RawOptionVariant(_) => formatter.write_str("raw option variant"),
+            Value::EnumVariant(_, __) => formatter.write_str("raw enum variant"),
+            Value::OptionVariant(_) => formatter.write_str("raw option variant"),
             Value::RegExp(_) => formatter.write_str("regular expression"),
             Value::File(_) => formatter.write_str("file"),
+            Value::Reference(_) => formatter.write_str("reference"),
         }
     }
 }

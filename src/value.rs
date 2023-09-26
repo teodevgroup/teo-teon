@@ -11,10 +11,8 @@ use chrono::{NaiveDate, SecondsFormat};
 use regex::Regex;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
-use super::pipeline::TeonPipeline;
+use crate::teon::{File, Pipeline, Range};
 use super::index::Index;
-use super::range::TeonRange;
-use super::file::TeonFile;
 use super::error::Error;
 use super::result::Result;
 
@@ -119,23 +117,19 @@ pub enum Value {
 
     /// Represents a Teon range.
     ///
-    Range(TeonRange),
+    Range(Range),
 
     /// Represents a Teon tuple.
     ///
     Tuple(Vec<Value>),
 
-    /// Represents a Teon pipeline.
-    ///
-    Pipeline(TeonPipeline),
-
     /// Raw enum choice.
     ///
-    RawEnumVariant(String, Option<Vec<(Option<String>, Value)>>),
+    EnumVariant(String, Option<Vec<(Option<String>, Value)>>),
 
     /// Raw option choice
     ///
-    RawOptionVariant(u32),
+    OptionVariant(u32),
 
     /// Regular expression
     ///
@@ -143,7 +137,15 @@ pub enum Value {
 
     /// Represents a file.
     ///
-    File(TeonFile),
+    File(File),
+
+    /// Represents a Teon pipeline.
+    ///
+    Pipeline(Pipeline),
+
+    /// Represents a reference.
+    ///
+    Reference(Vec<String>),
 }
 
 impl Value {
@@ -249,7 +251,7 @@ impl Value {
     pub fn str_from_string_or_raw_enum_variant(&self) -> Option<&str> {
         match self {
             Value::String(s) => Some(s),
-            Value::RawEnumVariant(s, _) => Some(s),
+            Value::EnumVariant(s, _) => Some(s),
             _ => None,
         }
     }
@@ -423,7 +425,7 @@ impl Value {
 
     pub fn as_raw_enum_variant(&self) -> Option<&str> {
         match self {
-            Value::RawEnumVariant(s, _) => Some(s.as_str()),
+            Value::EnumVariant(s, _) => Some(s.as_str()),
             _ => None,
         }
     }
@@ -434,7 +436,7 @@ impl Value {
 
     pub fn as_raw_option_variant(&self) -> Option<u32> {
         match self {
-            Value::RawOptionVariant(o) => Some(*o),
+            Value::OptionVariant(o) => Some(*o),
             _ => None,
         }
     }
@@ -443,7 +445,7 @@ impl Value {
         self.as_range().is_some()
     }
 
-    pub fn as_range(&self) -> Option<&TeonRange> {
+    pub fn as_range(&self) -> Option<&Range> {
         match self {
             Value::Range(r) => Some(r),
             _ => None,
@@ -465,7 +467,7 @@ impl Value {
         self.as_file().is_some()
     }
 
-    pub fn as_file(&self) -> Option<&TeonFile> {
+    pub fn as_file(&self) -> Option<&File> {
         match self {
             Value::File(f) => Some(f),
             _ => None,
@@ -476,9 +478,20 @@ impl Value {
         self.as_pipeline().is_some()
     }
 
-    pub fn as_pipeline(&self) -> Option<&TeonPipeline> {
+    pub fn as_pipeline(&self) -> Option<&Pipeline> {
         match self {
             Value::Pipeline(p) => Some(p),
+            _ => None,
+        }
+    }
+
+    pub fn is_reference(&self) -> bool {
+        self.as_reference().is_some()
+    }
+
+    pub fn as_reference(&self) -> Option<&Vec<String>> {
+        match self {
+            Value::Reference(r) => Some(r),
             _ => None,
         }
     }
@@ -531,9 +544,10 @@ impl Value {
             Value::Range(_) => unreachable!(),
             Value::Tuple(v) => Cow::Owned("(".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + ")"),
             Value::Pipeline(_) => unreachable!(),
-            Value::RawEnumVariant(v, _) => Cow::Owned(format!(".{}", v.as_str())),
-            Value::RawOptionVariant(_) => unreachable!(),
+            Value::EnumVariant(v, _) => Cow::Owned(format!(".{}", v.as_str())),
+            Value::OptionVariant(_) => unreachable!(),
             Value::RegExp(_) => unreachable!(),
+            Value::Reference(_) => unreachable!(),
             Value::File(f) => Cow::Owned(format!("File(\"{}\")", f.filename)),
         }
     }
@@ -754,7 +768,7 @@ impl PartialEq for Value {
             (HashMap(s), HashMap(o)) => s == o,
             (IndexMap(s), IndexMap(o)) => s == o,
             (BTreeMap(s), BTreeMap(o)) => s == o,
-            (RawEnumVariant(s1, a1), RawEnumVariant(s2, a2)) => s1 == s2 && a1 == a2,
+            (EnumVariant(s1, a1), EnumVariant(s2, a2)) => s1 == s2 && a1 == a2,
             _ => false,
         }
     }
