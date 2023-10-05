@@ -1,4 +1,6 @@
-use std::ops;
+use std::collections::HashMap;
+use std::{fmt, ops};
+use std::fmt::{Display};
 use super::value::Value;
 
 // Code from this file is inspired from serde json
@@ -7,6 +9,7 @@ use super::value::Value;
 pub trait Index {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value>;
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value>;
+    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value;
 }
 
 impl Index for usize {
@@ -14,6 +17,7 @@ impl Index for usize {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
         match v {
             Value::Array(vec) => vec.get(*self),
+            Value::Tuple(vec) => vec.get(*self),
             _ => None,
         }
     }
@@ -21,7 +25,32 @@ impl Index for usize {
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
         match v {
             Value::Array(vec) => vec.get_mut(*self),
+            Value::Tuple(vec) => vec.get_mut(*self),
             _ => None,
+        }
+    }
+
+    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
+        match v {
+            Value::Array(vec) => {
+                let len = vec.len();
+                vec.get_mut(*self).unwrap_or_else(|| {
+                    panic!(
+                        "cannot access index {} of Teon array of length {}",
+                        self, len
+                    )
+                })
+            },
+            Value::Tuple(vec) => {
+                let len = vec.len();
+                vec.get_mut(*self).unwrap_or_else(|| {
+                    panic!(
+                        "cannot access index {} of Teon tuple of length {}",
+                        self, len
+                    )
+                })
+            },
+            _ => panic!("cannot access index {} of Teon {}", self, v.type_hint()),
         }
     }
 }
@@ -45,6 +74,18 @@ impl Index for str {
             _ => None,
         }
     }
+
+    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
+        if let Value::Null = v {
+            *v = Value::Dictionary(HashMap::new());
+        }
+        match v {
+            Value::Dictionary(map) => map.entry(self.to_owned()).or_insert(Value::Null),
+            Value::BTreeDictionary(map) => map.entry(self.to_owned()).or_insert(Value::Null),
+            Value::IndexDictionary(map) => map.entry(self.to_owned()).or_insert(Value::Null),
+            _ => panic!("cannot access key {:?} in Teon {}", self, v.type_hint()),
+        }
+    }
 }
 
 impl Index for String {
@@ -56,6 +97,10 @@ impl Index for String {
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
         self[..].index_into_mut(v)
     }
+
+    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
+        self[..].index_or_insert(v)
+    }
 }
 
 impl<'a, T> Index for &'a T where T: ?Sized + Index, {
@@ -66,6 +111,10 @@ impl<'a, T> Index for &'a T where T: ?Sized + Index, {
 
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
         (**self).index_into_mut(v)
+    }
+
+    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
+        (**self).index_or_insert(v)
     }
 }
 
