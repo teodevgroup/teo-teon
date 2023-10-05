@@ -1,3 +1,4 @@
+use std::backtrace::BacktraceStatus::Disabled;
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
@@ -535,62 +536,11 @@ impl Value {
             _ => panic!()
         }
     }
-
-    pub fn fmt_for_display(&self) -> Cow<str> {
-        match self {
-            Value::Null => Cow::Borrowed("null"),
-            Value::Bool(v) => if *v { Cow::Borrowed("true") } else { Cow::Borrowed("false") },
-            Value::Int(i) => Cow::Owned(i.to_string()),
-            Value::Int64(i) => Cow::Owned(i.to_string()),
-            Value::Float32(f) => Cow::Owned(f.to_string()),
-            Value::Float(f) => Cow::Owned(f.to_string()),
-            Value::Decimal(d) => Cow::Owned(format!("Decimal(\"{}\")", d.to_string())),
-            Value::ObjectId(o) => Cow::Owned(format!("ObjectId(\"{}\")", o.to_hex())),
-            Value::String(s) => Cow::Owned(format!("\"{}\"", s.replace("\"", "\\\""))),
-            Value::Date(d) => Cow::Owned(format!("Date(\"{}\")", d.to_string())),
-            Value::DateTime(dt) => Cow::Owned(format!("DateTime(\"{}\")", dt.to_rfc3339_opts(SecondsFormat::Millis, true))),
-            Value::Array(v) => Cow::Owned("[".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + "]"),
-            Value::Dictionary(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
-            Value::btree_dictionary(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
-            Value::index_dictionary(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
-            Value::Range(_) => unreachable!(),
-            Value::Tuple(v) => Cow::Owned("(".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + ")"),
-            Value::Pipeline(_) => unreachable!(),
-            Value::EnumVariant(v, _) => Cow::Owned(format!(".{}", v.as_str())),
-            Value::OptionVariant(_) => unreachable!(),
-            Value::RegExp(_) => unreachable!(),
-            Value::Reference(_) => unreachable!(),
-            Value::File(f) => Cow::Owned(format!("File(\"{}\")", f.filename)),
-        }
-    }
 }
 
 impl Default for Value {
     fn default() -> Value {
         Value::Null
-    }
-}
-
-impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        use Value::*;
-        match (self, other) {
-            (Null, Null) => Some(Ordering::Equal),
-            (ObjectId(s), ObjectId(o)) => s.partial_cmp(o),
-            (Bool(s), Bool(o)) => s.partial_cmp(o),
-            (Int(s), Int(o)) => s.partial_cmp(o),
-            (Int64(s), Int64(o)) => s.partial_cmp(o),
-            (Float32(s), Float32(o)) => s.partial_cmp(o),
-            (Float(s), Float(o)) => s.partial_cmp(o),
-            (Decimal(s), Decimal(o)) => s.partial_cmp(o),
-            (String(s), String(o)) => s.partial_cmp(o),
-            (Date(s), Date(o)) => s.partial_cmp(o),
-            (DateTime(s), DateTime(o)) => s.partial_cmp(o),
-            (Array(s), Array(o)) => s.partial_cmp(o),
-            (Dictionary(_s), Dictionary(_o)) => None,
-            (btree_dictionary(_s), btree_dictionary(_o)) => None,
-            _ => None,
-        }
     }
 }
 
@@ -756,44 +706,139 @@ impl Neg for &Value {
 }
 
 impl PartialEq for Value {
+
     fn eq(&self, other: &Self) -> bool {
         use Value::*;
         if self.is_any_int() && other.is_any_int() {
-            return self.as_int64().unwrap() == other.as_int64().unwrap();
+            return self.to_int64().unwrap() == other.to_int64().unwrap();
         }
-        if self.is_any_number() && other.is_any_number() {
-            return self.as_float().unwrap() == other.as_float().unwrap();
+        if self.is_any_int_or_float() && other.is_any_int_or_float() {
+            return self.to_float().unwrap() == other.to_float().unwrap();
         }
         match (self, other) {
             (Null, Null) => true,
-            (ObjectId(s), ObjectId(o)) => s == o,
             (Bool(s), Bool(o)) => s == o,
-            (Int(s), Int(o)) => s == o,
-            (Int64(s), Int64(o)) => s == o,
-            (Float32(s), Float32(o)) => s == o,
-            (Float(s), Float(o)) => s == o,
             (Decimal(s), Decimal(o)) => s == o,
+            (ObjectId(s), ObjectId(o)) => s == o,
             (String(s), String(o)) => s == o,
             (Date(s), Date(o)) => s == o,
             (DateTime(s), DateTime(o)) => s == o,
             (Array(s), Array(o)) => s == o,
             (Dictionary(s), Dictionary(o)) => s == o,
-            (index_dictionary(s), index_dictionary(o)) => s == o,
-            (btree_dictionary(s), btree_dictionary(o)) => s == o,
-            (EnumVariant(s1, a1), EnumVariant(s2, a2)) => s1 == s2 && a1 == a2,
+            (BTreeDictionary(s), BTreeDictionary(o)) => s == o,
+            (IndexDictionary(s), IndexDictionary(o)) => s == o,
+            (Range(s), Range(o)) => s == o,
+            (Tuple(s), Tuple(o)) => s == o,
+            (EnumVariant(s), EnumVariant(o)) => s == o,
+            (RegExp(s), RegExp(o)) => s == o,
+            (File(s), File(o)) => s == o,
+            (Pipeline(s), Pipeline(o)) => s == o,
+            (Reference(s), Reference(o)) => s == o,
             _ => false,
         }
     }
 }
 
+impl PartialOrd for Value {
+
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        use Value::*;
+        if self.is_any_int() && other.is_any_int() {
+            return self.to_int64().unwrap().partial_cmp(&other.to_int64().unwrap());
+        }
+        if self.is_any_int_or_float() && other.is_any_int_or_float() {
+            return self.to_float().unwrap().partial_cmp(&other.to_float().unwrap());
+        }
+        match (self, other) {
+            (Null, Null) => Some(Ordering::Equal),
+            (Bool(s), Bool(o)) => s.partial_cmp(o),
+            (Decimal(s), Decimal(o)) => s.partial_cmp(o),
+            (ObjectId(s), ObjectId(o)) => s.partial_cmp(o),
+            (String(s), String(o)) => s.partial_cmp(o),
+            (Date(s), Date(o)) => s.partial_cmp(o),
+            (DateTime(s), DateTime(o)) => s.partial_cmp(o),
+            (Array(s), Array(o)) => s.partial_cmp(o),
+            (Tuple(s), Tuple(o)) => s.partial_cmp(o),
+            (EnumVariant(s), EnumVariant(o)) => s.value.partial_cmp(&o.value),
+            _ => None,
+        }
+    }
+}
+
 impl AsRef<Value> for Value {
+
     fn as_ref(&self) -> &Value {
         &self
     }
 }
 
 impl Display for Value {
+
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.fmt_for_display().as_ref())
+        match self {
+            Value::Undetermined => f.write_str("undetermined"),
+            Value::Null => f.write_str("null"),
+            Value::Bool(b) => Display::fmt(b, f),
+            Value::Int(i) => Display::fmt(i, f),
+            Value::Int64(i) => Display::fmt(i, f),
+            Value::Float32(n) => Display::fmt(n, f),
+            Value::Float(n) => Display::fmt(n, f),
+            Value::Decimal(d) => {
+                f.write_str("Decimal(\"")?;
+                Display::fmt(d, f)?;
+                f.write_str("\"")
+            },
+            Value::ObjectId(o) => {
+                f.write_str("ObjectId(\"")?;
+                Display::fmt(o, f)?;
+                f.write_str("\"")
+            },
+            Value::String(s) => {
+                f.write_str(&format!("\"{}\"", s.replace("\"", "\\\"")))
+            }
+            Value::Date(d) => f.write_str(&format!("Date(\"{}\")", d.to_string())),
+            Value::DateTime(d) => f.write_str(&format!("DateTime(\"{}\")", d.to_rfc3339_opts(SecondsFormat::Millis, true))),
+            Value::Array(a) => {
+                f.write_str(&("[".to_string() + a.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + "]"))
+            }
+            Value::Dictionary(m) => {
+                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"))
+            }
+            Value::BTreeDictionary(m) => {
+                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"))
+            }
+            Value::IndexDictionary(m) => {
+                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"))
+            }
+            Value::Range(r) => Display::fmt(r, f),
+            Value::Tuple(t) => {
+                f.write_str("(")?;
+                for (i, v) in t.iter().enumerate() {
+                    Display::fmt(v, f)?;
+                    if i != t.len() - 1 {
+                        f.write_str(", ")?;
+                    }
+                }
+                if t.len() == 1 {
+                    f.write_str(",")?;
+                }
+                f.write_str(")")
+            }
+            Value::EnumVariant(e) => {
+                f.write_str(&e.display)
+            }
+            Value::RegExp(r) => {
+                f.write_str("/")?;
+                f.write_str(&format!("{}", r.as_str().replace("/", "\\/")))?;
+                f.write_str("/")
+            }
+            Value::File(file) => Display::fmt(file, f),
+            Value::Pipeline(p) => Display::fmt(p, f),
+            Value::Reference(r) => {
+                f.write_str("Reference(\"")?;
+                f.write_str(&r.join(", "))?;
+                f.write_str("\")")
+            }
+        }
     }
 }

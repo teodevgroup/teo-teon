@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use maplit::hashset;
 use serde_json::{Value as JsonValue};
@@ -12,7 +13,17 @@ pub struct File {
     pub filename_ext: Option<String>,
 }
 
+impl Display for File {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("File(\"")?;
+        f.write_str(&self.filepath.as_str().replace("\"", "\\\""))?;
+        f.write_str("\")")
+    }
+}
+
 impl TryFrom<&JsonValue> for File {
+
     type Error = Error;
 
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
@@ -43,7 +54,7 @@ impl TryFrom<&JsonValue> for File {
                 },
                 filename: if let Some(filename) = object.get("filename") {
                     if let Some(filename) = filename.as_str() {
-                        filepath.to_owned()
+                        filename.to_owned()
                     } else {
                         Err(Error::new(format!("Cannot convert json value to file, invalid value at `filename`, expect string")))?
                     }
