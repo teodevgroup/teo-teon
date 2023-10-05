@@ -1,4 +1,7 @@
 pub mod json;
+pub mod str;
+pub mod string;
+pub mod bool;
 
 use crate::value::Value;
 

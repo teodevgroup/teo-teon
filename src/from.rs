@@ -5,48 +5,7 @@ use bigdecimal::BigDecimal;
 use serde_json::Value as JsonValue;
 use super::value::Value;
 
-// MARK: - Self
 
-
-// MARK: - String
-
-impl From<&str> for Value {
-    fn from(v: &str) -> Self {
-        Value::String(v.to_string())
-    }
-}
-
-impl From<String> for Value {
-    fn from(v: String) -> Self {
-        Value::String(v)
-    }
-}
-
-impl<'a> From<&'a Value> for &'a str {
-    fn from(v: &'a Value) -> &'a str {
-        v.as_str().unwrap()
-    }
-}
-
-impl From<Value> for String {
-    fn from(v: Value) -> Self {
-        v.as_str().unwrap().to_string()
-    }
-}
-
-// MARK: - Bool
-
-impl From<bool> for Value {
-    fn from(v: bool) -> Self {
-        Value::Bool(v)
-    }
-}
-
-impl From<Value> for bool {
-    fn from(v: Value) -> Self {
-        v.as_bool().unwrap()
-    }
-}
 
 // MARK: - Numbers
 
