@@ -5,39 +5,8 @@ use bigdecimal::BigDecimal;
 use serde_json::Value as JsonValue;
 use super::value::Value;
 
-// MARK: - serde_json
-
-impl From<&JsonValue> for Value {
-    fn from(value: &JsonValue) -> Self {
-        match value {
-            JsonValue::Bool(b) => Self::Bool(*b),
-            JsonValue::Number(n) => if n.is_i64() {
-                Self::Int64(n.as_i64().unwrap())
-            } else if n.is_f64() {
-                Self::Float(n.as_f64().unwrap())
-            } else if n.is_u64() {
-                Self::Int64(n.as_i64().unwrap())
-            } else {
-                unreachable!()
-            },
-            JsonValue::String(s) => Self::String(s.clone()),
-            JsonValue::Null => Self::Null,
-            JsonValue::Array(vec) => Self::Array(vec.iter().map(|v| {
-                Self::from(v)
-            }).collect()),
-            JsonValue::Object(obj) => Self::Dictionary(obj.iter().map(|(k, v)| {
-                (k.to_owned(), Self::from(v))
-            }).collect()),
-        }
-    }
-}
-
 // MARK: - Self
-impl From<&Value> for Value {
-    fn from(v: &Value) -> Self {
-        v.to_owned()
-    }
-}
+
 
 // MARK: - String
 
