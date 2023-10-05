@@ -2,14 +2,14 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::mem;
-use std::ops::{Add, Div, Mul, Sub, Rem, Neg, BitAnd, BitXor, BitOr};
+use std::ops::{Add, Div, Mul, Sub, Rem, Neg, BitAnd, BitXor, BitOr, Not};
 use std::str::FromStr;
 use chrono::prelude::{DateTime, Utc};
 use indexmap::IndexMap;
 use bson::oid::ObjectId;
 use chrono::{NaiveDate, SecondsFormat};
 use regex::Regex;
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
 use crate::types::enum_variant::EnumVariant;
 use crate::types::file::File;
@@ -547,7 +547,13 @@ impl Value {
             Value::IndexDictionary(_) => "IndexDictionary",
             Value::Range(_) => "Range",
             Value::Tuple(_) => "Tuple",
-            Value::EnumVariant(_) => "EnumVariant",
+            Value::EnumVariant(e) => {
+                if e.value.is_any_int() {
+                    "OptionEnumVariant"
+                } else {
+                    "EnumVariant"
+                }
+            },
             Value::RegExp(_) => "RegExp",
             Value::File(_) => "File",
             Value::Pipeline(_) => "Pipeline",
@@ -563,6 +569,34 @@ impl Value {
             Value::Float(n) => Value::Float((*n).recip()),
             Value::Decimal(n) => Value::Decimal(BigDecimal::from_str("1").unwrap() / n),
             _ => Err(Error::new("recip: value is not number"))?
+        })
+    }
+
+    pub fn normal_not(&self) -> Value {
+        Value::Bool(match self {
+            Value::Undetermined => true,
+            Value::Null => true,
+            Value::Bool(b) => !b,
+            Value::Int(i) => i.is_zero(),
+            Value::Int64(i) => i.is_zero(),
+            Value::Float32(f) => f.is_zero(),
+            Value::Float(f) => f.is_zero(),
+            Value::Decimal(d) => d.is_zero(),
+            Value::ObjectId(o) => false,
+            Value::String(s) => s.is_empty(),
+            Value::Date(_) => false,
+            Value::DateTime(_) => false,
+            Value::Array(a) => a.is_empty(),
+            Value::Dictionary(d) => d.is_empty(),
+            Value::BTreeDictionary(d) => d.is_empty(),
+            Value::IndexDictionary(d) => d.is_empty(),
+            Value::Range(_) => false,
+            Value::Tuple(a) => false,
+            Value::EnumVariant(e) => (e.normal_not()).as_bool().unwrap(),
+            Value::RegExp(_) => false,
+            Value::File(_) => false,
+            Value::Pipeline(_) => false,
+            Value::Reference(_) => false,
         })
     }
 }
@@ -826,6 +860,24 @@ impl BitOr for &Value {
                 Value::Int64(v | rhs.as_int64().unwrap())
             },
             _ => Err(operand_error_message(self, "bitor"))?,
+        })
+    }
+}
+
+// This is bit neg
+impl Not for &Value {
+
+    type Output = Result<Value>;
+
+    fn not(self) -> Self::Output {
+        Ok(match self {
+            Value::Int(val) => Value::Int(-*val),
+            Value::Int64(val) => Value::Int64(-*val),
+            Value::Float32(val) => Value::Float32(-*val),
+            Value::Float(val) => Value::Float(-*val),
+            Value::Decimal(val) => Value::Decimal(val.neg()),
+            Value::EnumVariant(e) => e.not()?,
+            _ => Err(operand_error_message(self, "bitneg"))?,
         })
     }
 }
