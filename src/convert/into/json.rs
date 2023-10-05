@@ -1,6 +1,5 @@
 use serde_json::{Value as JsonValue, Number as JsonNumber, Map as JsonMap, json};
 use chrono::SecondsFormat;
-use itertools::Itertools;
 use crate::error::Error;
 use crate::value::Value;
 
