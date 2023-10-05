@@ -3,12 +3,12 @@ use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use crate::value::Value;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pipeline {
     pub items: Vec<PipelineItem>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PipelineItem {
     pub path: Vec<usize>,
     pub string_path: Vec<String>,
@@ -27,7 +27,7 @@ impl Display for Pipeline {
             f.write_str(&item.string_path.join("."))?;
             if let Some(args) = &item.args {
                 f.write_str("(")?;
-                f.write_str(&args.iter().map(|k, v| format!("{k}: {}", v)).join(", "))?;
+                f.write_str(&args.iter().map(|(k, v)| format!("{k}: {}", v)).join(", "))?;
                 f.write_str(")")?;
             }
         }

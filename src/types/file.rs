@@ -5,7 +5,7 @@ use maplit::hashset;
 use serde_json::{Value as JsonValue};
 use crate::error::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct File {
     pub filepath: String,
     pub content_type: Option<String>,
@@ -29,9 +29,9 @@ impl TryFrom<&JsonValue> for File {
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         if let Some(object) = value.as_object() {
             let keys_set: HashSet<&str> = object.keys().map(|k| k.as_str()).collect();
-            let difference: HashSet<&str> = keys_set.difference(&hashset!{"filepath", "contentType", "filename", "filenameExt"}).collect();
+            let difference: HashSet<&str> = keys_set.difference(&hashset!{"filepath", "contentType", "filename", "filenameExt"}).map(|s| *s).collect();
             if !difference.is_empty() {
-                Err(Error::new(format!("Connot convert json value to file, unexpected key {}", difference.iter().map(|k| format!("`{}`", *k)).join(", "))))
+                return Err(Error::new(format!("Connot convert json value to file, unexpected key {}", difference.iter().map(|k| format!("`{}`", *k)).join(", "))));
             }
             Ok(Self {
                 filepath: if let Some(filepath) = object.get("filepath") {

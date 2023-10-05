@@ -1,10 +1,9 @@
-use std::backtrace::BacktraceStatus::Disabled;
-use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::mem;
 use std::ops::{Add, Div, Mul, Sub, Rem, Neg, BitAnd, BitXor, BitOr};
+use std::str::FromStr;
 use chrono::prelude::{DateTime, Utc};
 use indexmap::IndexMap;
 use bson::oid::ObjectId;
@@ -381,14 +380,14 @@ impl Value {
 
     pub fn as_btree_dictionary(&self) -> Option<&BTreeMap<String, Value>> {
         match self {
-            Value::btree_dictionary(map) => Some(map),
+            Value::BTreeDictionary(map) => Some(map),
             _ => None,
         }
     }
 
     pub fn as_btree_dictionary_mut(&mut self) -> Option<&mut BTreeMap<String, Value>> {
         match self {
-            Value::btree_dictionary(map) => Some(map),
+            Value::BTreeDictionary(map) => Some(map),
             _ => None,
         }
     }
@@ -399,14 +398,14 @@ impl Value {
 
     pub fn as_index_dictionary(&self) -> Option<&IndexMap<String, Value>> {
         match self {
-            Value::index_dictionary(map) => Some(map),
+            Value::IndexDictionary(map) => Some(map),
             _ => None,
         }
     }
 
     pub fn as_index_dictionary_mut(&mut self) -> Option<&mut IndexMap<String, Value>> {
         match self {
-            Value::index_dictionary(map) => Some(map),
+            Value::IndexDictionary(map) => Some(map),
             _ => None,
         }
     }
@@ -526,15 +525,45 @@ impl Value {
         mem::replace(self, Value::Null)
     }
 
-    pub fn recip(&self) -> f64 {
+    // Type hint
+
+    pub fn type_hint(&self) -> &str {
         match self {
-            Value::Int(n) => (*n as f64).recip(),
-            Value::Int64(n) => (*n as f64).recip(),
-            Value::Float32(n) => (*n as f64).recip(),
-            Value::Float(n) => (*n as f64).recip(),
-            Value::Decimal(_n) => panic!("decimal div todo"),
-            _ => panic!()
+            Value::Undetermined => "Undetermined",
+            Value::Null => "Null",
+            Value::Bool(_) => "Bool",
+            Value::Int(_) => "Int",
+            Value::Int64(_) => "Int64",
+            Value::Float32(_) => "Float32",
+            Value::Float(_) => "Float",
+            Value::Decimal(_) => "Decimal",
+            Value::ObjectId(_) => "ObjectId",
+            Value::String(_) => "String",
+            Value::Date(_) => "Date",
+            Value::DateTime(_) => "DateTime",
+            Value::Array(_) => "Array",
+            Value::Dictionary(_) => "Dictionary",
+            Value::BTreeDictionary(_) => "BTreeDictionary",
+            Value::IndexDictionary(_) => "IndexDictionary",
+            Value::Range(_) => "Range",
+            Value::Tuple(_) => "Tuple",
+            Value::EnumVariant(_) => "EnumVariant",
+            Value::RegExp(_) => "RegExp",
+            Value::File(_) => "File",
+            Value::Pipeline(_) => "Pipeline",
+            Value::Reference(_) => "Reference",
         }
+    }
+
+    pub fn recip(&self) -> Result<Value> {
+        Ok(match self {
+            Value::Int(n) => Value::Float((*n as f64).recip()),
+            Value::Int64(n) => Value::Float((*n as f64).recip()),
+            Value::Float32(n) => Value::Float32((*n).recip()),
+            Value::Float(n) => Value::Float((*n).recip()),
+            Value::Decimal(n) => Value::Decimal(BigDecimal::from_str("1").unwrap() / n),
+            _ => Err(Error::new("recip: value is not number"))?
+        })
     }
 }
 
@@ -544,164 +573,260 @@ impl Default for Value {
     }
 }
 
-fn check_operand(lhs: &Value, name: &str) -> Result<()> {
-    if !lhs.is_any_number() {
-        return Err(Error::new(format!("{}: operand is not number", name)));
+fn check_operand<F>(operand: &Value, name: &str, matcher: F) -> Result<()> where F: Fn(&Value) -> bool {
+    if !matcher(operand) {
+        return Err(operand_error_message(operand, name));
     }
     Ok(())
 }
 
-fn check_operands(lhs: &Value, rhs: &Value, name: &str) -> Result<()> {
-    if !lhs.is_any_number() {
-        return Err(Error::new(format!("{}: lhs is not number", name)));
-    }
-    if !rhs.is_any_number() {
-        return Err(Error::new(format!("{}: rhs is not number", name)));
+fn operand_error_message(operand: &Value, name: &str) -> Error {
+    Error::new(format!("cannot {name} {}", operand.type_hint()))
+}
+
+fn check_operands<F>(lhs: &Value, rhs: &Value, name: &str, matcher: F) -> Result<()> where F: Fn(&Value) -> bool {
+    let matcher_wrapper = |value: &Value| {
+        (&matcher)(value)
+    };
+    if !matcher_wrapper(lhs) || !matcher_wrapper(rhs) {
+        return Err(operands_error_message(lhs, rhs, name));
     }
     Ok(())
 }
 
-fn check_operands_int(lhs: &Value, rhs: &Value, name: &str) -> Result<()> {
-    if !lhs.is_any_int() {
-        return Err(Error::new(format!("{}: lhs is not number", name)));
-    }
-    if !rhs.is_any_int() {
-        return Err(Error::new(format!("{}: rhs is not number", name)));
-    }
-    Ok(())
+fn operands_error_message(lhs: &Value, rhs: &Value, name: &str) -> Error {
+    Error::new(format!("cannot {name} {} with {}", lhs.type_hint(), rhs.type_hint()))
 }
 
-impl Add for Value {
+impl Add for &Value {
+
     type Output = Result<Value>;
+
     fn add(self, rhs: Self) -> Self::Output {
-        check_operands(&self, &rhs, "add")?;
         Ok(match self {
-            Value::Int(v) => Value::Int(v + rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v + rhs.as_int64().unwrap()),
-            Value::Float32(v) => Value::Float32(v + rhs.as_float32().unwrap()),
-            Value::Float(v) => Value::Float(v + rhs.as_float().unwrap()),
-            Value::Decimal(d) => Value::Decimal(d + rhs.as_decimal().unwrap()),
-            _ => unreachable!(),
+            Value::Int(v) => {
+                check_operands(&self, &rhs, "add", |v| v.is_any_int())?;
+                Value::Int(v + rhs.to_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, &rhs, "add", |v| v.is_any_int())?;
+                Value::Int64(v + rhs.to_int64().unwrap())
+            },
+            Value::Float32(v) => {
+                check_operands(&self, &rhs, "add", |v| v.is_any_int_or_float())?;
+                Value::Float32(v + rhs.to_float32().unwrap())
+            },
+            Value::Float(v) => {
+                check_operands(&self, &rhs, "add", |v| v.is_any_int_or_float())?;
+                Value::Float(v + rhs.to_float().unwrap())
+            },
+            Value::Decimal(d) => {
+                check_operands(&self, &rhs, "add", |v| v.is_decimal())?;
+                Value::Decimal(d + rhs.as_decimal().unwrap())
+            },
+            Value::String(s) => {
+                check_operands(&self, &rhs, "add", |v| v.is_string())?;
+                Value::String(s.to_owned() + rhs.as_str().unwrap())
+            }
+            _ => Err(operands_error_message(self, rhs, "add"))?,
         })
     }
 }
 
-impl Sub for Value {
+impl Sub for &Value {
+
     type Output = Result<Value>;
+
     fn sub(self, rhs: Self) -> Self::Output {
-        check_operands(&self, &rhs, "sub")?;
         Ok(match self {
-            Value::Int(v) => Value::Int(v - rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v - rhs.as_int64().unwrap()),
-            Value::Float32(v) => Value::Float32(v - rhs.as_float32().unwrap()),
-            Value::Float(v) => Value::Float(v - rhs.as_float().unwrap()),
-            Value::Decimal(d) => Value::Decimal(d - rhs.as_decimal().unwrap()),
-            _ => unreachable!(),
+            Value::Int(v) => {
+                check_operands(&self, &rhs, "sub", |v| v.is_any_int())?;
+                Value::Int(v - rhs.to_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, &rhs, "sub", |v| v.is_any_int())?;
+                Value::Int64(v - rhs.to_int64().unwrap())
+            },
+            Value::Float32(v) => {
+                check_operands(&self, &rhs, "sub", |v| v.is_any_int_or_float())?;
+                Value::Float32(v - rhs.to_float32().unwrap())
+            },
+            Value::Float(v) => {
+                check_operands(&self, &rhs, "sub", |v| v.is_any_int_or_float())?;
+                Value::Float(v - rhs.to_float().unwrap())
+            },
+            Value::Decimal(d) => {
+                check_operands(&self, &rhs, "sub", |v| v.is_decimal())?;
+                Value::Decimal(d - rhs.as_decimal().unwrap())
+            },
+            _ => Err(operands_error_message(self, rhs, "sub"))?,
         })
     }
 }
 
-impl Mul for Value {
+impl Mul for &Value {
+
     type Output = Result<Value>;
+
     fn mul(self, rhs: Self) -> Self::Output {
-        check_operands(&self, &rhs, "mul")?;
         Ok(match self {
-            Value::Int(v) => Value::Int(v * rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v * rhs.as_int64().unwrap()),
-            Value::Float32(v) => Value::Float32(v * rhs.as_float32().unwrap()),
-            Value::Float(v) => Value::Float(v * rhs.as_float().unwrap()),
-            Value::Decimal(d) => Value::Decimal(d * rhs.as_decimal().unwrap()),
-            _ => unreachable!(),
+            Value::Int(v) => {
+                check_operands(&self, &rhs, "mul", |v| v.is_any_int())?;
+                Value::Int(v * rhs.to_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, &rhs, "mul", |v| v.is_any_int())?;
+                Value::Int64(v * rhs.to_int64().unwrap())
+            },
+            Value::Float32(v) => {
+                check_operands(&self, &rhs, "mul", |v| v.is_any_int_or_float())?;
+                Value::Float32(v * rhs.to_float32().unwrap())
+            },
+            Value::Float(v) => {
+                check_operands(&self, &rhs, "mul", |v| v.is_any_int_or_float())?;
+                Value::Float(v * rhs.to_float().unwrap())
+            },
+            Value::Decimal(d) => {
+                check_operands(&self, &rhs, "mul", |v| v.is_decimal())?;
+                Value::Decimal(d * rhs.as_decimal().unwrap())
+            },
+            _ => Err(operands_error_message(self, rhs, "mul"))?,
         })
     }
 }
 
-impl Div for Value {
+impl Div for &Value {
+
     type Output = Result<Value>;
+
     fn div(self, rhs: Self) -> Self::Output {
-        check_operands(&self, &rhs, "div")?;
         Ok(match self {
-            Value::Int(v) => Value::Int(v / rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v / rhs.as_int64().unwrap()),
-            Value::Float32(v) => Value::Float32(v / rhs.as_float32().unwrap()),
-            Value::Float(v) => Value::Float(v / rhs.as_float().unwrap()),
-            Value::Decimal(d) => Value::Decimal(d / rhs.as_decimal().unwrap()),
-            _ => unreachable!(),
+            Value::Int(v) => {
+                check_operands(&self, &rhs, "div", |v| v.is_any_int())?;
+                Value::Int(v / rhs.to_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, &rhs, "div", |v| v.is_any_int())?;
+                Value::Int64(v / rhs.to_int64().unwrap())
+            },
+            Value::Float32(v) => {
+                check_operands(&self, &rhs, "div", |v| v.is_any_int_or_float())?;
+                Value::Float32(v / rhs.to_float32().unwrap())
+            },
+            Value::Float(v) => {
+                check_operands(&self, &rhs, "div", |v| v.is_any_int_or_float())?;
+                Value::Float(v / rhs.to_float().unwrap())
+            },
+            Value::Decimal(d) => {
+                check_operands(&self, &rhs, "div", |v| v.is_decimal())?;
+                Value::Decimal(d / rhs.as_decimal().unwrap())
+            },
+            _ => Err(operands_error_message(self, rhs, "div"))?,
         })
     }
 }
 
-impl Rem for Value {
+impl Rem for &Value {
+
     type Output = Result<Value>;
+
     fn rem(self, rhs: Self) -> Self::Output {
-        check_operands(&self, &rhs, "rem")?;
         Ok(match self {
-            Value::Int(v) => Value::Int(v % rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v % rhs.as_int64().unwrap()),
-            Value::Float32(v) => Value::Float32(v % rhs.as_float32().unwrap()),
-            Value::Float(v) => Value::Float(v % rhs.as_float().unwrap()),
-            Value::Decimal(d) => Value::Decimal(d % rhs.as_decimal().unwrap()),
-            _ => unreachable!(),
-        })
-    }
-}
-
-impl Neg for Value {
-    type Output = Result<Value>;
-    fn neg(self) -> Self::Output {
-        check_operand(&self, "neg")?;
-        Ok(match self {
-            Value::Int(val) => Value::Int(-val),
-            Value::Int64(val) => Value::Int64(-val),
-            Value::Float32(val) => Value::Float32(-val),
-            Value::Float(val) => Value::Float(-val),
-            Value::Decimal(val) => Value::Decimal(-val),
-            _ => unreachable!(),
-        })
-    }
-}
-
-impl BitAnd for Value {
-    type Output = Result<Value>;
-    fn bitand(self, rhs: Self) -> Self::Output {
-        check_operands_int(&self, &rhs, "bitand")?;
-        Ok(match self {
-            Value::Int(v) => Value::Int(v & rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v & rhs.as_int64().unwrap()),
-            _ => Value::Null,
-        })
-    }
-}
-
-impl BitXor for Value {
-    type Output = Result<Value>;
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        check_operands_int(&self, &rhs, "bitxor")?;
-        Ok(match self {
-            Value::Int(v) => Value::Int(v ^ rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v ^ rhs.as_int64().unwrap()),
-            _ => Value::Null,
-        })
-    }
-}
-
-impl BitOr for Value {
-    type Output = Result<Value>;
-    fn bitor(self, rhs: Self) -> Self::Output {
-        check_operands_int(&self, &rhs, "bitor")?;
-        Ok(match self {
-            Value::Int(v) => Value::Int(v | rhs.as_int().unwrap()),
-            Value::Int64(v) => Value::Int64(v | rhs.as_int64().unwrap()),
-            _ => Value::Null,
+            Value::Int(v) => {
+                check_operands(&self, &rhs, "rem", |v| v.is_any_int())?;
+                Value::Int(v % rhs.to_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, &rhs, "rem", |v| v.is_any_int())?;
+                Value::Int64(v % rhs.to_int64().unwrap())
+            },
+            Value::Float32(v) => {
+                check_operands(&self, &rhs, "rem", |v| v.is_any_int_or_float())?;
+                Value::Float32(v % rhs.to_float32().unwrap())
+            },
+            Value::Float(v) => {
+                check_operands(&self, &rhs, "rem", |v| v.is_any_int_or_float())?;
+                Value::Float(v % rhs.to_float().unwrap())
+            },
+            Value::Decimal(d) => {
+                check_operands(&self, &rhs, "rem", |v| v.is_decimal())?;
+                Value::Decimal(d % rhs.as_decimal().unwrap())
+            },
+            _ => Err(operands_error_message(self, rhs, "rem"))?,
         })
     }
 }
 
 impl Neg for &Value {
+
     type Output = Result<Value>;
 
     fn neg(self) -> Self::Output {
-        (self.clone()).neg()
+        Ok(match self {
+            Value::Int(val) => Value::Int(-*val),
+            Value::Int64(val) => Value::Int64(-*val),
+            Value::Float32(val) => Value::Float32(-*val),
+            Value::Float(val) => Value::Float(-*val),
+            Value::Decimal(val) => Value::Decimal(val.neg()),
+            _ => Err(operand_error_message(self, "neg"))?,
+        })
+    }
+}
+
+impl BitAnd for &Value {
+
+    type Output = Result<Value>;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Ok(match self {
+            Value::Int(v) => {
+                check_operands(&self, rhs, "bitand", |v| v.is_any_int())?;
+                Value::Int(v & rhs.as_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, rhs, "bitand", |v| v.is_any_int())?;
+                Value::Int64(v & rhs.as_int64().unwrap())
+            },
+            _ => Err(operand_error_message(self, "bitand"))?,
+        })
+    }
+}
+
+impl BitXor for &Value {
+
+    type Output = Result<Value>;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Ok(match self {
+            Value::Int(v) => {
+                check_operands(&self, rhs, "bitxor", |v| v.is_any_int())?;
+                Value::Int(v ^ rhs.as_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, rhs, "bitxor", |v| v.is_any_int())?;
+                Value::Int64(v ^ rhs.as_int64().unwrap())
+            },
+            _ => Err(operand_error_message(self, "bitxor"))?,
+        })
+    }
+}
+
+impl BitOr for &Value {
+
+    type Output = Result<Value>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Ok(match self {
+            Value::Int(v) => {
+                check_operands(&self, rhs, "bitor", |v| v.is_any_int())?;
+                Value::Int(v | rhs.as_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, rhs, "bitor", |v| v.is_any_int())?;
+                Value::Int64(v | rhs.as_int64().unwrap())
+            },
+            _ => Err(operand_error_message(self, "bitor"))?,
+        })
     }
 }
 
@@ -730,7 +855,7 @@ impl PartialEq for Value {
             (Range(s), Range(o)) => s == o,
             (Tuple(s), Tuple(o)) => s == o,
             (EnumVariant(s), EnumVariant(o)) => s == o,
-            (RegExp(s), RegExp(o)) => s == o,
+            (RegExp(s), RegExp(o)) => s.as_str() == o.as_str(),
             (File(s), File(o)) => s == o,
             (Pipeline(s), Pipeline(o)) => s == o,
             (Reference(s), Reference(o)) => s == o,
@@ -799,16 +924,16 @@ impl Display for Value {
             Value::Date(d) => f.write_str(&format!("Date(\"{}\")", d.to_string())),
             Value::DateTime(d) => f.write_str(&format!("DateTime(\"{}\")", d.to_rfc3339_opts(SecondsFormat::Millis, true))),
             Value::Array(a) => {
-                f.write_str(&("[".to_string() + a.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + "]"))
+                f.write_str(&("[".to_string() + a.iter().map(|v| format!("{v}")).join(", ").as_str() + "]"))
             }
             Value::Dictionary(m) => {
-                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"))
+                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", format!("{v}"))).join(", ").as_str() + "}"))
             }
             Value::BTreeDictionary(m) => {
-                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"))
+                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", format!("{v}"))).join(", ").as_str() + "}"))
             }
             Value::IndexDictionary(m) => {
-                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"))
+                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", format!("{v}"))).join(", ").as_str() + "}"))
             }
             Value::Range(r) => Display::fmt(r, f),
             Value::Tuple(t) => {
@@ -836,7 +961,7 @@ impl Display for Value {
             Value::Pipeline(p) => Display::fmt(p, f),
             Value::Reference(r) => {
                 f.write_str("Reference(\"")?;
-                f.write_str(&r.join(", "))?;
+                f.write_str(&r.iter().map(|s| s.to_string()).join(", "))?;
                 f.write_str("\")")
             }
         }
