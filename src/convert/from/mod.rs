@@ -10,6 +10,7 @@ pub mod decimal;
 pub mod object_id;
 pub mod date;
 pub mod datetime;
+pub mod usize;
 
 use crate::value::Value;
 
