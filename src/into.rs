@@ -2,7 +2,7 @@ use serde_json::{Value as JsonValue, Number as JsonNumber, Map as JsonMap, json}
 use super::value::Value;
 use chrono::SecondsFormat;
 
-impl Into<JsonValue> for Value {
+impl Into<JsonValue> for &Value {
     fn into(self) -> JsonValue {
         match self {
             Value::Null => {
@@ -14,17 +14,17 @@ impl Into<JsonValue> for Value {
             Value::Bool(val) => {
                 JsonValue::Bool(val.clone())
             }
-            Value::I32(val) => {
+            Value::Int(val) => {
                 JsonValue::Number(JsonNumber::from(val))
             }
-            Value::I64(val) => {
+            Value::Int64(val) => {
                 JsonValue::Number(JsonNumber::from(val))
             }
-            Value::F32(val) => {
+            Value::Float32(val) => {
                 JsonValue::Number(JsonNumber::from_f64(val as f64).unwrap())
             }
-            Value::F64(val) => {
-                JsonValue::Number(JsonNumber::from_f64(val).unwrap())
+            Value::Float(val) => {
+                JsonValue::Number(JsonNumber::from_f64(val.clone()).unwrap())
             }
             Value::Decimal(val) => {
                 json!({"$decimal": val.normalized().to_string() })
@@ -38,24 +38,24 @@ impl Into<JsonValue> for Value {
             Value::DateTime(val) => {
                 json!({"$date": val.to_rfc3339_opts(SecondsFormat::Millis, true)})
             }
-            Value::Vec(val) => {
+            Value::Array(val) => {
                 JsonValue::Array(val.iter().map(|v| v.into()).collect())
             }
-            Value::HashMap(val) => {
+            Value::Dictionary(val) => {
+                let mut map = JsonMap::new();
+                for (k, v) in val {
+                    map.insert(k.clone(), v.into());
+                }
+                JsonValue::Object(map)
+            }
+            Value::BTreeDictionary(val) => {
                 let mut map = JsonMap::new();
                 for (k, v) in val {
                     map.insert(k.to_string(), v.into());
                 }
                 JsonValue::Object(map)
             }
-            Value::BTreeMap(val) => {
-                let mut map = JsonMap::new();
-                for (k, v) in val {
-                    map.insert(k.to_string(), v.into());
-                }
-                JsonValue::Object(map)
-            }
-            Value::IndexMap(val) => {
+            Value::IndexDictionary(val) => {
                 let mut map = JsonMap::new();
                 for (k, v) in val {
                     map.insert(k.to_string(), v.into());
@@ -69,8 +69,8 @@ impl Into<JsonValue> for Value {
     }
 }
 
-impl Into<JsonValue> for &Value {
+impl Into<JsonValue> for Value {
     fn into(self) -> JsonValue {
-        self.clone().into()
+        self.into()
     }
 }

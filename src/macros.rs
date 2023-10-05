@@ -196,19 +196,19 @@ macro_rules! teon {
     };
 
     ([]) => {
-        $crate::value::Value::Vec(vec![])
+        $crate::value::Value::Array(vec![])
     };
 
     ([ $($tt:tt)+ ]) => {
-        $crate::value::Value::Vec($crate::teon!(@array [] $($tt)+))
+        $crate::value::Value::Array($crate::teon!(@array [] $($tt)+))
     };
 
     ({}) => {
-        $crate::value::Value::HashMap(std::collections::HashMap::new())
+        $crate::value::Value::Dictionary(std::collections::HashMap::new())
     };
 
    ({ $($tt:tt)+ }) => {
-        $crate::value::Value::HashMap({
+        $crate::value::Value::Dictionary({
             let mut map = std::collections::HashMap::new();
             teon!(@object map () ($($tt)+) ($($tt)+));
             map

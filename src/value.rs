@@ -11,7 +11,10 @@ use chrono::{NaiveDate, SecondsFormat};
 use regex::Regex;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
-use crate::teon::{File, Pipeline, Range};
+use crate::types::enum_variant::EnumVariant;
+use crate::types::file::File;
+use crate::types::pipeline::Pipeline;
+use crate::types::range::Range;
 use super::index::Index;
 use super::error::Error;
 use super::result::Result;
@@ -19,13 +22,16 @@ use super::result::Result;
 // Code from this file is inspired from serde json
 // https://github.com/serde-rs/json/blob/master/src/value/mod.rs
 
-/// Represents any valid Teon value. A Teon value is an extension for Teo just like Bson for
-/// MongoDB.
+/// Represents any valid Teon value.
 ///
 #[derive(Debug, Clone)]
 pub enum Value {
 
-    /// Represents a TEON null value.
+    /// Represents an undetermined value. This is typically returned from parser when error occurs
+    ///
+    Undetermined,
+
+    /// Represents a Teon null value.
     ///
     /// ```
     /// # use teo_teon::teon;
@@ -34,7 +40,7 @@ pub enum Value {
     /// ```
     Null,
 
-    /// Represents a Teon bool.
+    /// Represents a Teon Bool.
     ///
     /// ```
     /// # use teo_teon::teon;
@@ -43,113 +49,111 @@ pub enum Value {
     /// ```
     Bool(bool),
 
-    /// Represents a Teon i32.
+    /// Represents a Teon Int.
     ///
     /// ```
     /// # use teo_teon::teon;
     /// #
     /// let v = teon!(12_i32);
     /// ```
-    I32(i32),
+    Int(i32),
 
-    /// Represents a Teon i64.
+    /// Represents a Teon Int64.
     ///
     /// ```
     /// # use teo_teon::teon;
     /// #
     /// let v = teon!(12_i64);
     /// ```
-    I64(i64),
+    Int64(i64),
 
-    /// Represents a Teon f32.
+    /// Represents a Teon Float32.
     ///
     /// ```
     /// # use teo_teon::teon;
     /// #
     /// let v = teon!(12.5_f32);
     /// ```
-    F32(f32),
+    Float32(f32),
 
-    /// Represents a Teon f64.
+    /// Represents a Teon Float.
     ///
     /// ```
     /// # use teo_teon::teon;
     /// #
     /// let v = teon!(12.5_f64);
     /// ```
-    F64(f64),
+    Float(f64),
 
-    /// Represents a Teon decimal.
+    /// Represents a Teon Decimal.
     ///
     Decimal(BigDecimal),
 
-    /// Represents a Teon object id.
+    /// Represents a Teon ObjectId.
     ///
     ObjectId(ObjectId),
 
-    /// Represents a Teon string.
+    /// Represents a Teon String.
     ///
     String(String),
 
-    /// Represents a Teon date.
+    /// Represents a Teon Date.
     ///
     Date(NaiveDate),
 
-    /// Represents a Teon datetime.
+    /// Represents a Teon DateTime.
     ///
     DateTime(DateTime<Utc>),
 
-    /// Represents a Teon array.
+    /// Represents a Teon Array.
     ///
-    Vec(Vec<Value>),
+    Array(Vec<Value>),
 
-    /// Represents a Teon hashmap.
+    /// Represents a Teon Dictionary.
     ///
-    HashMap(HashMap<String, Value>),
+    Dictionary(HashMap<String, Value>),
 
-    /// Represents a Teon btreemap.
+    /// Represents a Teon btree_dictionary.
     ///
-    BTreeMap(BTreeMap<String, Value>),
+    BTreeDictionary(BTreeMap<String, Value>),
 
-    /// Represents a Teon btreemap.
+    /// Represents a Teon index_dictionary.
     ///
-    IndexMap(IndexMap<String, Value>),
+    IndexDictionary(IndexMap<String, Value>),
 
-    /// Represents a Teon range.
+    /// Represents a Teon Range.
     ///
     Range(Range),
 
-    /// Represents a Teon tuple.
+    /// Represents a Teon Tuple.
     ///
     Tuple(Vec<Value>),
 
-    /// Raw enum choice.
+    /// Represents a Teon enum variant value.
     ///
-    EnumVariant(String, Option<Vec<(Option<String>, Value)>>),
+    EnumVariant(EnumVariant),
 
-    /// Raw option choice
-    ///
-    OptionVariant(u32),
-
-    /// Regular expression
+    /// Represents a Teon RegExp.
     ///
     RegExp(Regex),
 
-    /// Represents a file.
+    /// Represents a Teon File.
     ///
     File(File),
 
-    /// Represents a Teon pipeline.
+    /// Represents a Teon Pipeline.
     ///
     Pipeline(Pipeline),
 
-    /// Represents a reference.
+    /// Represents a Teon Reference. Its type is determined by the parser.
     ///
-    Reference(Vec<String>),
+    Reference(Vec<usize>),
 }
 
 impl Value {
 
+    // Access
+    
     pub fn get<I: Index>(&self, index: I) -> Option<&Value> {
         index.index_into(self)
     }
@@ -158,186 +162,113 @@ impl Value {
         index.index_into_mut(self)
     }
 
-    pub fn is_hashmap(&self) -> bool {
-        self.as_hashmap().is_some()
-    }
+    // Value
 
-    pub fn as_hashmap(&self) -> Option<&HashMap<String, Value>> {
+    pub fn is_undetermined(&self) -> bool {
         match self {
-            Value::HashMap(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn as_hashmap_mut(&mut self) -> Option<&mut HashMap<String, Value>> {
-        match self {
-            Value::HashMap(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn is_btreemap(&self) -> bool {
-        self.as_btreemap().is_some()
-    }
-
-    pub fn as_btreemap(&self) -> Option<&BTreeMap<String, Value>> {
-        match self {
-            Value::BTreeMap(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn as_btreemap_mut(&mut self) -> Option<&mut BTreeMap<String, Value>> {
-        match self {
-            Value::BTreeMap(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn is_indexmap(&self) -> bool {
-        self.as_indexmap().is_some()
-    }
-
-    pub fn as_indexmap(&self) -> Option<&IndexMap<String, Value>> {
-        match self {
-            Value::IndexMap(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn as_indexmap_mut(&mut self) -> Option<&mut IndexMap<String, Value>> {
-        match self {
-            Value::IndexMap(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn is_vec(&self) -> bool {
-        self.as_vec().is_some()
-    }
-
-    pub fn as_vec(&self) -> Option<&Vec<Value>> {
-        match self {
-            Value::Vec(vec) => Some(vec),
-            _ => None,
-        }
-    }
-
-    pub fn into_vec(self) -> Option<Vec<Value>> {
-        match self {
-            Value::Vec(vec) => Some(vec),
-            _ => None,
-        }
-    }
-
-    pub fn as_vec_mut(&mut self) -> Option<&mut Vec<Value>> {
-        match self {
-            Value::Vec(vec) => Some(vec),
-            _ => None,
-        }
-    }
-
-    pub fn is_string(&self) -> bool {
-        self.as_str().is_some()
-    }
-
-    pub fn as_str(&self) -> Option<&str> {
-        match self {
-            Value::String(s) => Some(s),
-            _ => None,
-        }
-    }
-
-    pub fn str_from_string_or_raw_enum_variant(&self) -> Option<&str> {
-        match self {
-            Value::String(s) => Some(s),
-            Value::EnumVariant(s, _) => Some(s),
-            _ => None,
-        }
-    }
-
-    pub fn is_i(&self) -> bool {
-        match *self {
-            Value::I32(_) | Value::I64(_) => true,
+            Value::Undetermined => true,
             _ => false,
         }
     }
 
-    pub fn is_f(&self) -> bool {
-        match *self {
-            Value::F32(_) | Value::F64(_) => true,
+    pub fn is_null(&self) -> bool {
+        match self {
+            Value::Null => true,
             _ => false,
         }
     }
 
-    pub fn is_number(&self) -> bool {
-        self.is_i() || self.is_f()
+    pub fn is_bool(&self) -> bool {
+        self.as_bool().is_some()
     }
 
-    pub fn is_i32(&self) -> bool {
+    pub fn as_bool(&self) -> Option<bool> {
         match *self {
-            Value::I32(_) => true,
-            _ => false,
+            Value::Bool(b) => Some(b),
+            _ => None,
         }
     }
 
-    pub fn as_i32(&self) -> Option<i32> {
+    pub fn is_int(&self) -> bool {
+        self.as_int().is_some()
+    }
+
+    pub fn as_int(&self) -> Option<i32> {
         match *self {
-            Value::I32(v) => Some(v),
-            Value::I64(v) => Some(v as i32),
-            Value::F32(f) => Some(f as i32),
-            Value::F64(f) => Some(f as i32),
+            Value::Int(v) => Some(v),
             _ => None
         }
     }
 
-    pub fn is_i64(&self) -> bool {
+    pub fn to_int(&self) -> Option<i32> {
         match *self {
-            Value::I64(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn as_i64(&self) -> Option<i64> {
-        match *self {
-            Value::I32(v) => Some(v as i64),
-            Value::I64(v) => Some(v),
-            Value::F32(f) => Some(f as i64),
-            Value::F64(f) => Some(f as i64),
+            Value::Int(i) => Some(i),
+            Value::Int64(i) => if i >= (i32::MAX as i64) {
+                None
+            } else {
+                Some(i as i32)
+            }
             _ => None
         }
     }
 
-    pub fn is_f32(&self) -> bool {
-        match *self {
-            Value::F32(_v) => true,
-            _ => false,
-        }
+    pub fn is_int64(&self) -> bool {
+        self.as_int64().is_some()
     }
 
-    pub fn as_f32(&self) -> Option<f32> {
+    pub fn as_int64(&self) -> Option<i64> {
         match *self {
-            Value::I32(v) => Some(v as f32),
-            Value::I64(v) => Some(v as f32),
-            Value::F32(v) => Some(v),
-            Value::F64(v) => Some(v as f32),
+            Value::Int64(v) => Some(v),
             _ => None
         }
     }
 
-    pub fn is_f64(&self) -> bool {
+    pub fn to_int64(&self) -> Option<i64> {
         match *self {
-            Value::F64(_v) => true,
-            _ => false,
+            Value::Int64(v) => Some(v),
+            Value::Int(v) => Some(v as i64),
+            _ => None,
         }
     }
 
-    pub fn as_f64(&self) -> Option<f64> {
+    pub fn is_float32(&self) -> bool {
+        self.as_float32().is_some()
+    }
+
+    pub fn as_float32(&self) -> Option<f32> {
         match *self {
-            Value::I32(v) => Some(v as f64),
-            Value::I64(v) => Some(v as f64),
-            Value::F32(v) => Some(v as f64),
-            Value::F64(v) => Some(v as f64),
+            Value::Float32(v) => Some(v),
+            _ => None
+        }
+    }
+
+    pub fn to_float32(&self) -> Option<f32> {
+        match *self {
+            Value::Float32(v) => Some(v),
+            Value::Float(v) => Some(v as f32),
+            Value::Int(i) => Some(i as f32),
+            Value::Int64(i) => Some(i as f32),
+            _ => None,
+        }
+    }
+
+    pub fn is_float(&self) -> bool {
+        self.as_float().is_some()
+    }
+
+    pub fn as_float(&self) -> Option<f64> {
+        match *self {
+            Value::Float(v) => Some(v),
+            _ => None
+        }
+    }
+
+    pub fn to_float(&self) -> Option<f64> {
+        match *self {
+            Value::Int(v) => Some(v as f64),
+            Value::Int64(v) => Some(v as f64),
+            Value::Float32(v) => Some(v as f64),
+            Value::Float(v) => Some(v),
             _ => None
         }
     }
@@ -349,28 +280,31 @@ impl Value {
         }
     }
 
-    pub fn as_decimal(&self) -> Option<BigDecimal> {
+    pub fn as_decimal(&self) -> Option<&BigDecimal> {
         match self {
-            Value::Decimal(v) => Some(v.clone()),
+            Value::Decimal(v) => Some(v),
             _ => None
         }
     }
 
-    pub fn as_usize(&self) -> Option<usize> {
+    pub fn is_object_id(&self) -> bool {
+        self.as_object_id().is_some()
+    }
+
+    pub fn as_object_id(&self) -> Option<&ObjectId> {
         match self {
-            Value::I32(n) => Some(*n as usize),
-            Value::I64(n) => Some(*n as usize),
-            _ => None
+            Value::ObjectId(o) => Some(o),
+            _ => None,
         }
     }
 
-    pub fn is_bool(&self) -> bool {
-        self.as_bool().is_some()
+    pub fn is_string(&self) -> bool {
+        self.as_str().is_some()
     }
 
-    pub fn as_bool(&self) -> Option<bool> {
-        match *self {
-            Value::Bool(b) => Some(b),
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Value::String(s) => Some(s),
             _ => None,
         }
     }
@@ -397,46 +331,81 @@ impl Value {
         }
     }
 
-    pub fn is_object_id(&self) -> bool {
-        self.as_object_id().is_some()
+    pub fn is_array(&self) -> bool {
+        self.as_array().is_some()
     }
 
-    pub fn as_object_id(&self) -> Option<&ObjectId> {
+    pub fn as_array(&self) -> Option<&Vec<Value>> {
         match self {
-            Value::ObjectId(o) => Some(o),
+            Value::Array(vec) => Some(vec),
             _ => None,
         }
     }
 
-    pub fn is_null(&self) -> bool {
-        self.as_null().is_some()
-    }
-
-    pub fn as_null(&self) -> Option<()> {
-        match *self {
-            Value::Null => Some(()),
+    pub fn as_array_mut(&mut self) -> Option<&mut Vec<Value>> {
+        match self {
+            Value::Array(vec) => Some(vec),
             _ => None,
         }
     }
 
-    pub fn is_raw_enum_variant(&self) -> bool {
-        self.as_raw_enum_variant().is_some()
-    }
-
-    pub fn as_raw_enum_variant(&self) -> Option<&str> {
+    pub fn into_array(self) -> Option<Vec<Value>> {
         match self {
-            Value::EnumVariant(s, _) => Some(s.as_str()),
+            Value::Array(vec) => Some(vec),
             _ => None,
         }
     }
 
-    pub fn is_raw_option_variant(&self) -> bool {
-        self.as_raw_option_variant().is_some()
+    pub fn is_dictionary(&self) -> bool {
+        self.as_dictionary().is_some()
     }
 
-    pub fn as_raw_option_variant(&self) -> Option<u32> {
+    pub fn as_dictionary(&self) -> Option<&HashMap<String, Value>> {
         match self {
-            Value::OptionVariant(o) => Some(*o),
+            Value::Dictionary(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn as_dictionary_mut(&mut self) -> Option<&mut HashMap<String, Value>> {
+        match self {
+            Value::Dictionary(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn is_btree_dictionary(&self) -> bool {
+        self.as_btree_dictionary().is_some()
+    }
+
+    pub fn as_btree_dictionary(&self) -> Option<&BTreeMap<String, Value>> {
+        match self {
+            Value::btree_dictionary(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn as_btree_dictionary_mut(&mut self) -> Option<&mut BTreeMap<String, Value>> {
+        match self {
+            Value::btree_dictionary(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn is_index_dictionary(&self) -> bool {
+        self.as_index_dictionary().is_some()
+    }
+
+    pub fn as_index_dictionary(&self) -> Option<&IndexMap<String, Value>> {
+        match self {
+            Value::index_dictionary(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn as_index_dictionary_mut(&mut self) -> Option<&mut IndexMap<String, Value>> {
+        match self {
+            Value::index_dictionary(map) => Some(map),
             _ => None,
         }
     }
@@ -459,6 +428,28 @@ impl Value {
     pub fn as_tuple(&self) -> Option<&Vec<Value>> {
         match self {
             Value::Tuple(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    pub fn is_enum_variant(&self) -> bool {
+        self.as_enum_variant().is_some()
+    }
+
+    pub fn as_enum_variant(&self) -> Option<&EnumVariant> {
+        match self {
+            Value::EnumVariant(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    pub fn is_regexp(&self) -> bool {
+        self.as_regexp().is_some()
+    }
+
+    pub fn as_regexp(&self) -> Option<&Regex> {
+        match self {
+            Value::RegExp(r) => Some(r),
             _ => None,
         }
     }
@@ -489,21 +480,42 @@ impl Value {
         self.as_reference().is_some()
     }
 
-    pub fn as_reference(&self) -> Option<&Vec<String>> {
+    pub fn as_reference(&self) -> Option<&Vec<usize>> {
         match self {
             Value::Reference(r) => Some(r),
             _ => None,
         }
     }
 
-    pub fn is_regexp(&self) -> bool {
-        self.as_regexp().is_some()
+    // Compound queries
+
+    pub fn is_any_int(&self) -> bool {
+        match *self {
+            Value::Int(_) | Value::Int64(_) => true,
+            _ => false,
+        }
     }
 
-    pub fn as_regexp(&self) -> Option<&Regex> {
-        match self {
-            Value::RegExp(r) => Some(r),
-            _ => None,
+    pub fn is_any_float(&self) -> bool {
+        match *self {
+            Value::Float32(_) | Value::Float(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_any_int_or_float(&self) -> bool {
+        self.is_any_int() || self.is_any_float()
+    }
+
+    pub fn is_any_number(&self) -> bool {
+        self.is_any_int() || self.is_any_float() || self.is_decimal()
+    }
+
+    pub fn to_usize(&self) -> Option<usize> {
+        match *self {
+            Value::Int(n) => Some(n as usize),
+            Value::Int64(n) => Some(n as usize),
+            _ => None
         }
     }
 
@@ -515,10 +527,10 @@ impl Value {
 
     pub fn recip(&self) -> f64 {
         match self {
-            Value::I32(n) => (*n as f64).recip(),
-            Value::I64(n) => (*n as f64).recip(),
-            Value::F32(n) => (*n as f64).recip(),
-            Value::F64(n) => (*n as f64).recip(),
+            Value::Int(n) => (*n as f64).recip(),
+            Value::Int64(n) => (*n as f64).recip(),
+            Value::Float32(n) => (*n as f64).recip(),
+            Value::Float(n) => (*n as f64).recip(),
             Value::Decimal(_n) => panic!("decimal div todo"),
             _ => panic!()
         }
@@ -528,19 +540,19 @@ impl Value {
         match self {
             Value::Null => Cow::Borrowed("null"),
             Value::Bool(v) => if *v { Cow::Borrowed("true") } else { Cow::Borrowed("false") },
-            Value::I32(i) => Cow::Owned(i.to_string()),
-            Value::I64(i) => Cow::Owned(i.to_string()),
-            Value::F32(f) => Cow::Owned(f.to_string()),
-            Value::F64(f) => Cow::Owned(f.to_string()),
+            Value::Int(i) => Cow::Owned(i.to_string()),
+            Value::Int64(i) => Cow::Owned(i.to_string()),
+            Value::Float32(f) => Cow::Owned(f.to_string()),
+            Value::Float(f) => Cow::Owned(f.to_string()),
             Value::Decimal(d) => Cow::Owned(format!("Decimal(\"{}\")", d.to_string())),
             Value::ObjectId(o) => Cow::Owned(format!("ObjectId(\"{}\")", o.to_hex())),
             Value::String(s) => Cow::Owned(format!("\"{}\"", s.replace("\"", "\\\""))),
             Value::Date(d) => Cow::Owned(format!("Date(\"{}\")", d.to_string())),
             Value::DateTime(dt) => Cow::Owned(format!("DateTime(\"{}\")", dt.to_rfc3339_opts(SecondsFormat::Millis, true))),
-            Value::Vec(v) => Cow::Owned("[".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + "]"),
-            Value::HashMap(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
-            Value::BTreeMap(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
-            Value::IndexMap(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
+            Value::Array(v) => Cow::Owned("[".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + "]"),
+            Value::Dictionary(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
+            Value::btree_dictionary(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
+            Value::index_dictionary(m) => Cow::Owned("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", v.fmt_for_display())).join(", ").as_str() + "}"),
             Value::Range(_) => unreachable!(),
             Value::Tuple(v) => Cow::Owned("(".to_string() + v.iter().map(|v| v.fmt_for_display()).join(", ").as_str() + ")"),
             Value::Pipeline(_) => unreachable!(),
@@ -566,44 +578,44 @@ impl PartialOrd for Value {
             (Null, Null) => Some(Ordering::Equal),
             (ObjectId(s), ObjectId(o)) => s.partial_cmp(o),
             (Bool(s), Bool(o)) => s.partial_cmp(o),
-            (I32(s), I32(o)) => s.partial_cmp(o),
-            (I64(s), I64(o)) => s.partial_cmp(o),
-            (F32(s), F32(o)) => s.partial_cmp(o),
-            (F64(s), F64(o)) => s.partial_cmp(o),
+            (Int(s), Int(o)) => s.partial_cmp(o),
+            (Int64(s), Int64(o)) => s.partial_cmp(o),
+            (Float32(s), Float32(o)) => s.partial_cmp(o),
+            (Float(s), Float(o)) => s.partial_cmp(o),
             (Decimal(s), Decimal(o)) => s.partial_cmp(o),
             (String(s), String(o)) => s.partial_cmp(o),
             (Date(s), Date(o)) => s.partial_cmp(o),
             (DateTime(s), DateTime(o)) => s.partial_cmp(o),
-            (Vec(s), Vec(o)) => s.partial_cmp(o),
-            (HashMap(_s), HashMap(_o)) => None,
-            (BTreeMap(_s), BTreeMap(_o)) => None,
+            (Array(s), Array(o)) => s.partial_cmp(o),
+            (Dictionary(_s), Dictionary(_o)) => None,
+            (btree_dictionary(_s), btree_dictionary(_o)) => None,
             _ => None,
         }
     }
 }
 
 fn check_operand(lhs: &Value, name: &str) -> Result<()> {
-    if !lhs.is_number() {
+    if !lhs.is_any_number() {
         return Err(Error::new(format!("{}: operand is not number", name)));
     }
     Ok(())
 }
 
 fn check_operands(lhs: &Value, rhs: &Value, name: &str) -> Result<()> {
-    if !lhs.is_number() {
+    if !lhs.is_any_number() {
         return Err(Error::new(format!("{}: lhs is not number", name)));
     }
-    if !rhs.is_number() {
+    if !rhs.is_any_number() {
         return Err(Error::new(format!("{}: rhs is not number", name)));
     }
     Ok(())
 }
 
 fn check_operands_int(lhs: &Value, rhs: &Value, name: &str) -> Result<()> {
-    if !lhs.is_i() {
+    if !lhs.is_any_int() {
         return Err(Error::new(format!("{}: lhs is not number", name)));
     }
-    if !rhs.is_i() {
+    if !rhs.is_any_int() {
         return Err(Error::new(format!("{}: rhs is not number", name)));
     }
     Ok(())
@@ -614,10 +626,10 @@ impl Add for Value {
     fn add(self, rhs: Self) -> Self::Output {
         check_operands(&self, &rhs, "add")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v + rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v + rhs.as_i64().unwrap()),
-            Value::F32(v) => Value::F32(v + rhs.as_f32().unwrap()),
-            Value::F64(v) => Value::F64(v + rhs.as_f64().unwrap()),
+            Value::Int(v) => Value::Int(v + rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v + rhs.as_int64().unwrap()),
+            Value::Float32(v) => Value::Float32(v + rhs.as_float32().unwrap()),
+            Value::Float(v) => Value::Float(v + rhs.as_float().unwrap()),
             Value::Decimal(d) => Value::Decimal(d + rhs.as_decimal().unwrap()),
             _ => unreachable!(),
         })
@@ -629,10 +641,10 @@ impl Sub for Value {
     fn sub(self, rhs: Self) -> Self::Output {
         check_operands(&self, &rhs, "sub")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v - rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v - rhs.as_i64().unwrap()),
-            Value::F32(v) => Value::F32(v - rhs.as_f32().unwrap()),
-            Value::F64(v) => Value::F64(v - rhs.as_f64().unwrap()),
+            Value::Int(v) => Value::Int(v - rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v - rhs.as_int64().unwrap()),
+            Value::Float32(v) => Value::Float32(v - rhs.as_float32().unwrap()),
+            Value::Float(v) => Value::Float(v - rhs.as_float().unwrap()),
             Value::Decimal(d) => Value::Decimal(d - rhs.as_decimal().unwrap()),
             _ => unreachable!(),
         })
@@ -644,10 +656,10 @@ impl Mul for Value {
     fn mul(self, rhs: Self) -> Self::Output {
         check_operands(&self, &rhs, "mul")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v * rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v * rhs.as_i64().unwrap()),
-            Value::F32(v) => Value::F32(v * rhs.as_f32().unwrap()),
-            Value::F64(v) => Value::F64(v * rhs.as_f64().unwrap()),
+            Value::Int(v) => Value::Int(v * rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v * rhs.as_int64().unwrap()),
+            Value::Float32(v) => Value::Float32(v * rhs.as_float32().unwrap()),
+            Value::Float(v) => Value::Float(v * rhs.as_float().unwrap()),
             Value::Decimal(d) => Value::Decimal(d * rhs.as_decimal().unwrap()),
             _ => unreachable!(),
         })
@@ -659,10 +671,10 @@ impl Div for Value {
     fn div(self, rhs: Self) -> Self::Output {
         check_operands(&self, &rhs, "div")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v / rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v / rhs.as_i64().unwrap()),
-            Value::F32(v) => Value::F32(v / rhs.as_f32().unwrap()),
-            Value::F64(v) => Value::F64(v / rhs.as_f64().unwrap()),
+            Value::Int(v) => Value::Int(v / rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v / rhs.as_int64().unwrap()),
+            Value::Float32(v) => Value::Float32(v / rhs.as_float32().unwrap()),
+            Value::Float(v) => Value::Float(v / rhs.as_float().unwrap()),
             Value::Decimal(d) => Value::Decimal(d / rhs.as_decimal().unwrap()),
             _ => unreachable!(),
         })
@@ -674,10 +686,10 @@ impl Rem for Value {
     fn rem(self, rhs: Self) -> Self::Output {
         check_operands(&self, &rhs, "rem")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v % rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v % rhs.as_i64().unwrap()),
-            Value::F32(v) => Value::F32(v % rhs.as_f32().unwrap()),
-            Value::F64(v) => Value::F64(v % rhs.as_f64().unwrap()),
+            Value::Int(v) => Value::Int(v % rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v % rhs.as_int64().unwrap()),
+            Value::Float32(v) => Value::Float32(v % rhs.as_float32().unwrap()),
+            Value::Float(v) => Value::Float(v % rhs.as_float().unwrap()),
             Value::Decimal(d) => Value::Decimal(d % rhs.as_decimal().unwrap()),
             _ => unreachable!(),
         })
@@ -689,10 +701,10 @@ impl Neg for Value {
     fn neg(self) -> Self::Output {
         check_operand(&self, "neg")?;
         Ok(match self {
-            Value::I32(val) => Value::I32(-val),
-            Value::I64(val) => Value::I64(-val),
-            Value::F32(val) => Value::F32(-val),
-            Value::F64(val) => Value::F64(-val),
+            Value::Int(val) => Value::Int(-val),
+            Value::Int64(val) => Value::Int64(-val),
+            Value::Float32(val) => Value::Float32(-val),
+            Value::Float(val) => Value::Float(-val),
             Value::Decimal(val) => Value::Decimal(-val),
             _ => unreachable!(),
         })
@@ -704,8 +716,8 @@ impl BitAnd for Value {
     fn bitand(self, rhs: Self) -> Self::Output {
         check_operands_int(&self, &rhs, "bitand")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v & rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v & rhs.as_i64().unwrap()),
+            Value::Int(v) => Value::Int(v & rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v & rhs.as_int64().unwrap()),
             _ => Value::Null,
         })
     }
@@ -716,8 +728,8 @@ impl BitXor for Value {
     fn bitxor(self, rhs: Self) -> Self::Output {
         check_operands_int(&self, &rhs, "bitxor")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v ^ rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v ^ rhs.as_i64().unwrap()),
+            Value::Int(v) => Value::Int(v ^ rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v ^ rhs.as_int64().unwrap()),
             _ => Value::Null,
         })
     }
@@ -728,8 +740,8 @@ impl BitOr for Value {
     fn bitor(self, rhs: Self) -> Self::Output {
         check_operands_int(&self, &rhs, "bitor")?;
         Ok(match self {
-            Value::I32(v) => Value::I32(v | rhs.as_i32().unwrap()),
-            Value::I64(v) => Value::I64(v | rhs.as_i64().unwrap()),
+            Value::Int(v) => Value::Int(v | rhs.as_int().unwrap()),
+            Value::Int64(v) => Value::Int64(v | rhs.as_int64().unwrap()),
             _ => Value::Null,
         })
     }
@@ -746,28 +758,28 @@ impl Neg for &Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         use Value::*;
-        if self.is_i() && other.is_i() {
-            return self.as_i64().unwrap() == other.as_i64().unwrap();
+        if self.is_any_int() && other.is_any_int() {
+            return self.as_int64().unwrap() == other.as_int64().unwrap();
         }
-        if self.is_number() && other.is_number() {
-            return self.as_f64().unwrap() == other.as_f64().unwrap();
+        if self.is_any_number() && other.is_any_number() {
+            return self.as_float().unwrap() == other.as_float().unwrap();
         }
         match (self, other) {
             (Null, Null) => true,
             (ObjectId(s), ObjectId(o)) => s == o,
             (Bool(s), Bool(o)) => s == o,
-            (I32(s), I32(o)) => s == o,
-            (I64(s), I64(o)) => s == o,
-            (F32(s), F32(o)) => s == o,
-            (F64(s), F64(o)) => s == o,
+            (Int(s), Int(o)) => s == o,
+            (Int64(s), Int64(o)) => s == o,
+            (Float32(s), Float32(o)) => s == o,
+            (Float(s), Float(o)) => s == o,
             (Decimal(s), Decimal(o)) => s == o,
             (String(s), String(o)) => s == o,
             (Date(s), Date(o)) => s == o,
             (DateTime(s), DateTime(o)) => s == o,
-            (Vec(s), Vec(o)) => s == o,
-            (HashMap(s), HashMap(o)) => s == o,
-            (IndexMap(s), IndexMap(o)) => s == o,
-            (BTreeMap(s), BTreeMap(o)) => s == o,
+            (Array(s), Array(o)) => s == o,
+            (Dictionary(s), Dictionary(o)) => s == o,
+            (index_dictionary(s), index_dictionary(o)) => s == o,
+            (btree_dictionary(s), btree_dictionary(o)) => s == o,
             (EnumVariant(s1, a1), EnumVariant(s2, a2)) => s1 == s2 && a1 == a2,
             _ => false,
         }

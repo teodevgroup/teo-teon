@@ -12,20 +12,20 @@ impl From<&JsonValue> for Value {
         match value {
             JsonValue::Bool(b) => Self::Bool(*b),
             JsonValue::Number(n) => if n.is_i64() {
-                Self::I64(n.as_i64().unwrap())
+                Self::Int64(n.as_i64().unwrap())
             } else if n.is_f64() {
-                Self::F64(n.as_f64().unwrap())
+                Self::Float(n.as_f64().unwrap())
             } else if n.is_u64() {
-                Self::I64(n.as_i64().unwrap())
+                Self::Int64(n.as_i64().unwrap())
             } else {
                 unreachable!()
             },
             JsonValue::String(s) => Self::String(s.clone()),
             JsonValue::Null => Self::Null,
-            JsonValue::Array(vec) => Self::Vec(vec.iter().map(|v| {
+            JsonValue::Array(vec) => Self::Array(vec.iter().map(|v| {
                 Self::from(v)
             }).collect()),
-            JsonValue::Object(obj) => Self::HashMap(obj.iter().map(|(k, v)| {
+            JsonValue::Object(obj) => Self::Dictionary(obj.iter().map(|(k, v)| {
                 (k.to_owned(), Self::from(v))
             }).collect()),
         }
@@ -83,25 +83,25 @@ impl From<Value> for bool {
 
 impl From<i32> for Value {
     fn from(v: i32) -> Self {
-        Value::I32(v)
+        Value::Int(v)
     }
 }
 
 impl From<i64> for Value {
     fn from(v: i64) -> Self {
-        Value::I64(v)
+        Value::Int64(v)
     }
 }
 
 impl From<f32> for Value {
     fn from(v: f32) -> Self {
-        Value::F32(v)
+        Value::Float32(v)
     }
 }
 
 impl From<f64> for Value {
     fn from(v: f64) -> Self {
-        Value::F64(v)
+        Value::Float(v)
     }
 }
 
@@ -110,30 +110,30 @@ impl From<BigDecimal> for Value {
 }
 
 impl From<usize> for Value {
-    fn from(v: usize) -> Self { Value::I64(v as i64) }
+    fn from(v: usize) -> Self { Value::Int64(v as i64) }
 }
 
 impl From<Value> for i32 {
     fn from(v: Value) -> Self {
-        v.as_i32().unwrap()
+        v.as_int().unwrap()
     }
 }
 
 impl From<Value> for i64 {
     fn from(v: Value) -> Self {
-        v.as_i64().unwrap()
+        v.as_int64().unwrap()
     }
 }
 
 impl From<Value> for f32 {
     fn from(v: Value) -> Self {
-        v.as_f32().unwrap()
+        v.as_float32().unwrap()
     }
 }
 
 impl From<Value> for f64 {
     fn from(v: Value) -> Self {
-        v.as_f64().unwrap()
+        v.as_float().unwrap()
     }
 }
 
@@ -246,7 +246,7 @@ impl<T> From<HashMap<String, T>> for Value where T: Into<Value> {
         for (k, v) in value {
             retval.insert(k.to_owned(), v.into());
         }
-        Value::HashMap(retval)
+        Value::Dictionary(retval)
     }
 }
 
@@ -324,7 +324,7 @@ impl From<Option<String>> for Value {
 impl From<Option<i32>> for Value {
     fn from(n: Option<i32>) -> Self {
         match n {
-            Some(n) => Value::I32(n),
+            Some(n) => Value::Int(n),
             None => Value::Null,
         }
     }
@@ -351,7 +351,7 @@ impl From<Value> for Option<i64> {
 impl From<Option<i64>> for Value {
     fn from(n: Option<i64>) -> Self {
         match n {
-            Some(n) => Value::I64(n),
+            Some(n) => Value::Int64(n),
             None => Value::Null,
         }
     }
@@ -387,7 +387,7 @@ impl From<Value> for Option<f32> {
 impl From<Option<f32>> for Value {
     fn from(n: Option<f32>) -> Self {
         match n {
-            Some(n) => Value::F32(n),
+            Some(n) => Value::Float32(n),
             None => Value::Null,
         }
     }
@@ -405,7 +405,7 @@ impl From<Value> for Option<f64> {
 impl From<Option<f64>> for Value {
     fn from(n: Option<f64>) -> Self {
         match n {
-            Some(n) => Value::F64(n),
+            Some(n) => Value::Float(n),
             None => Value::Null,
         }
     }
