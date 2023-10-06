@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::mem;
-use std::ops::{Add, Div, Mul, Sub, Rem, Neg, BitAnd, BitXor, BitOr, Not};
+use std::ops::{Add, Div, Mul, Sub, Rem, Neg, BitAnd, BitXor, BitOr, Not, Shl, Shr};
 use std::str::FromStr;
 use chrono::prelude::{DateTime, Utc};
 use indexmap::IndexMap;
@@ -803,6 +803,44 @@ impl Neg for &Value {
             Value::Float(val) => Value::Float(-*val),
             Value::Decimal(val) => Value::Decimal(val.neg()),
             _ => Err(operand_error_message(self, "neg"))?,
+        })
+    }
+}
+
+impl Shl for &Value {
+
+    type Output = Result<Value>;
+
+    fn shl(self, rhs: Self) -> Self::Output {
+        Ok(match self {
+            Value::Int(v) => {
+                check_operands(&self, rhs, "shift left", |v| v.is_any_int())?;
+                Value::Int(v << rhs.as_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, rhs, "shift left", |v| v.is_any_int())?;
+                Value::Int64(v << rhs.as_int64().unwrap())
+            },
+            _ => Err(operand_error_message(self, "shift left"))?,
+        })
+    }
+}
+
+impl Shr for &Value {
+
+    type Output = Result<Value>;
+
+    fn shr(self, rhs: Self) -> Self::Output {
+        Ok(match self {
+            Value::Int(v) => {
+                check_operands(&self, rhs, "shift right", |v| v.is_any_int())?;
+                Value::Int(v >> rhs.as_int().unwrap())
+            },
+            Value::Int64(v) => {
+                check_operands(&self, rhs, "shift right", |v| v.is_any_int())?;
+                Value::Int64(v >> rhs.as_int64().unwrap())
+            },
+            _ => Err(operand_error_message(self, "shift right"))?,
         })
     }
 }
