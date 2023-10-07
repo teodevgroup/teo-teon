@@ -614,6 +614,18 @@ fn check_operand<F>(operand: &Value, name: &str, matcher: F) -> Result<()> where
     Ok(())
 }
 
+fn check_enum_operands(name: &str, lhs: &Value, rhs: &Value) -> Result<()> {
+    if let (Some(l), Some(r)) = (lhs.as_enum_variant(), rhs.as_enum_variant()) {
+        if l.is_option() && r.is_option() && l.path == r.path {
+            Ok(())
+        } else {
+            Err(operands_error_message(lhs, rhs, name))
+        }
+    } else {
+        Err(operands_error_message(lhs, rhs, name))
+    }
+}
+
 fn operand_error_message(operand: &Value, name: &str) -> Error {
     Error::new(format!("cannot {name} {}", operand.type_hint()))
 }
@@ -859,6 +871,10 @@ impl BitAnd for &Value {
                 check_operands(&self, rhs, "bitand", |v| v.is_any_int())?;
                 Value::Int64(v & rhs.as_int64().unwrap())
             },
+            Value::EnumVariant(e) => {
+                check_enum_operands("bitand", self, rhs)?;
+                Value::EnumVariant((e & rhs.as_enum_variant().unwrap())?)
+            }
             _ => Err(operand_error_message(self, "bitand"))?,
         })
     }
@@ -878,6 +894,10 @@ impl BitXor for &Value {
                 check_operands(&self, rhs, "bitxor", |v| v.is_any_int())?;
                 Value::Int64(v ^ rhs.as_int64().unwrap())
             },
+            Value::EnumVariant(e) => {
+                check_enum_operands("bitxor", self, rhs)?;
+                Value::EnumVariant((e ^ rhs.as_enum_variant().unwrap())?)
+            }
             _ => Err(operand_error_message(self, "bitxor"))?,
         })
     }
@@ -897,6 +917,10 @@ impl BitOr for &Value {
                 check_operands(&self, rhs, "bitor", |v| v.is_any_int())?;
                 Value::Int64(v | rhs.as_int64().unwrap())
             },
+            Value::EnumVariant(e) => {
+                check_enum_operands("bitor", self, rhs)?;
+                Value::EnumVariant((e | rhs.as_enum_variant().unwrap())?)
+            }
             _ => Err(operand_error_message(self, "bitor"))?,
         })
     }
@@ -914,7 +938,7 @@ impl Not for &Value {
             Value::Float32(val) => Value::Float32(-*val),
             Value::Float(val) => Value::Float(-*val),
             Value::Decimal(val) => Value::Decimal(val.neg()),
-            Value::EnumVariant(e) => e.not()?,
+            Value::EnumVariant(e) => Value::EnumVariant(e.not()?),
             _ => Err(operand_error_message(self, "bitneg"))?,
         })
     }
