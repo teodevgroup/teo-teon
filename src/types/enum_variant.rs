@@ -91,7 +91,7 @@ impl Not for &EnumVariant {
     fn not(self) -> Self::Output {
         if self.value.is_any_int() {
             Ok(EnumVariant {
-                value: Box::new((self.value.as_ref().not()?)),
+                value: Box::new(self.value.as_ref().not()?),
                 display: format!("~{}", self.display),
                 path: self.path.clone(),
                 args: None,

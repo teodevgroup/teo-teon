@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use std::{fmt, ops};
-use std::fmt::{Display};
+use std::ops;
 use super::value::Value;
 
 // Code from this file is inspired from serde json

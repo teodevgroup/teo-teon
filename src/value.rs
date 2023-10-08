@@ -582,7 +582,7 @@ impl Value {
             Value::Float32(f) => f.is_zero(),
             Value::Float(f) => f.is_zero(),
             Value::Decimal(d) => d.is_zero(),
-            Value::ObjectId(o) => false,
+            Value::ObjectId(_) => false,
             Value::String(s) => s.is_empty(),
             Value::Date(_) => false,
             Value::DateTime(_) => false,
@@ -591,7 +591,7 @@ impl Value {
             Value::BTreeDictionary(d) => d.is_empty(),
             Value::IndexDictionary(d) => d.is_empty(),
             Value::Range(_) => false,
-            Value::Tuple(a) => false,
+            Value::Tuple(_) => false,
             Value::EnumVariant(e) => (e.normal_not()).as_bool().unwrap(),
             Value::RegExp(_) => false,
             Value::File(_) => false,
@@ -605,13 +605,6 @@ impl Default for Value {
     fn default() -> Value {
         Value::Null
     }
-}
-
-fn check_operand<F>(operand: &Value, name: &str, matcher: F) -> Result<()> where F: Fn(&Value) -> bool {
-    if !matcher(operand) {
-        return Err(operand_error_message(operand, name));
-    }
-    Ok(())
 }
 
 fn check_enum_operands(name: &str, lhs: &Value, rhs: &Value) -> Result<()> {

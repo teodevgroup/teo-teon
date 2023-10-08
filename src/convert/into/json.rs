@@ -60,6 +60,6 @@ impl TryInto<JsonValue> for Value {
     type Error = Error;
 
     fn try_into(self) -> Result<JsonValue, Self::Error> {
-        self.try_into()
+        (&self).try_into()
     }
 }

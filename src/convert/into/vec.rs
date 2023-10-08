@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 use crate::error::Error;
 use crate::value::Value;
 
