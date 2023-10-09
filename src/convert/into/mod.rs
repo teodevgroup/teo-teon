@@ -1,4 +1,5 @@
 pub mod json;
+pub mod str;
 pub mod string;
 pub mod bool;
 pub mod i32;

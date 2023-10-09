@@ -21,3 +21,5 @@ impl Debug for Error {
         f.write_str(&self.message)
     }
 }
+
+impl std::error::Error for Error { }

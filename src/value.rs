@@ -13,7 +13,6 @@ use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
 use crate::types::enum_variant::EnumVariant;
 use crate::types::file::File;
-use crate::types::pipeline::Pipeline;
 use crate::types::range::Range;
 use super::index::Index;
 use super::error::Error;
@@ -140,14 +139,6 @@ pub enum Value {
     /// Represents a Teon File.
     ///
     File(File),
-
-    /// Represents a Teon Pipeline.
-    ///
-    Pipeline(Pipeline),
-
-    /// Represents a Teon Reference. Its type is determined by the parser.
-    ///
-    Reference(Vec<usize>),
 }
 
 impl Value {
@@ -465,28 +456,6 @@ impl Value {
         }
     }
 
-    pub fn is_pipeline(&self) -> bool {
-        self.as_pipeline().is_some()
-    }
-
-    pub fn as_pipeline(&self) -> Option<&Pipeline> {
-        match self {
-            Value::Pipeline(p) => Some(p),
-            _ => None,
-        }
-    }
-
-    pub fn is_reference(&self) -> bool {
-        self.as_reference().is_some()
-    }
-
-    pub fn as_reference(&self) -> Option<&Vec<usize>> {
-        match self {
-            Value::Reference(r) => Some(r),
-            _ => None,
-        }
-    }
-
     // Compound queries
 
     pub fn is_any_int(&self) -> bool {
@@ -556,8 +525,6 @@ impl Value {
             },
             Value::RegExp(_) => "RegExp",
             Value::File(_) => "File",
-            Value::Pipeline(_) => "Pipeline",
-            Value::Reference(_) => "Reference",
         }
     }
 
@@ -595,8 +562,6 @@ impl Value {
             Value::EnumVariant(e) => (e.normal_not()).as_bool().unwrap(),
             Value::RegExp(_) => false,
             Value::File(_) => false,
-            Value::Pipeline(_) => false,
-            Value::Reference(_) => false,
         })
     }
 }
@@ -964,8 +929,6 @@ impl PartialEq for Value {
             (EnumVariant(s), EnumVariant(o)) => s == o,
             (RegExp(s), RegExp(o)) => s.as_str() == o.as_str(),
             (File(s), File(o)) => s == o,
-            (Pipeline(s), Pipeline(o)) => s == o,
-            (Reference(s), Reference(o)) => s == o,
             _ => false,
         }
     }
@@ -1065,12 +1028,6 @@ impl Display for Value {
                 f.write_str("/")
             }
             Value::File(file) => Display::fmt(file, f),
-            Value::Pipeline(p) => Display::fmt(p, f),
-            Value::Reference(r) => {
-                f.write_str("Reference(\"")?;
-                f.write_str(&r.iter().map(|s| s.to_string()).join(", "))?;
-                f.write_str("\")")
-            }
         }
     }
 }
