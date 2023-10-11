@@ -26,10 +26,6 @@ use super::result::Result;
 #[derive(Debug, Clone)]
 pub enum Value {
 
-    /// Represents an undetermined value. This is typically returned from parser when error occurs
-    ///
-    Undetermined,
-
     /// Represents a Teon null value.
     ///
     /// ```
@@ -154,13 +150,6 @@ impl Value {
     }
 
     // Value
-
-    pub fn is_undetermined(&self) -> bool {
-        match self {
-            Value::Undetermined => true,
-            _ => false,
-        }
-    }
 
     pub fn is_null(&self) -> bool {
         match self {
@@ -498,7 +487,6 @@ impl Value {
 
     pub fn type_hint(&self) -> &str {
         match self {
-            Value::Undetermined => "Undetermined",
             Value::Null => "Null",
             Value::Bool(_) => "Bool",
             Value::Int(_) => "Int",
@@ -541,7 +529,6 @@ impl Value {
 
     pub fn normal_not(&self) -> Value {
         Value::Bool(match self {
-            Value::Undetermined => true,
             Value::Null => true,
             Value::Bool(b) => !b,
             Value::Int(i) => i.is_zero(),
@@ -971,7 +958,6 @@ impl Display for Value {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Undetermined => f.write_str("undetermined"),
             Value::Null => f.write_str("null"),
             Value::Bool(b) => Display::fmt(b, f),
             Value::Int(i) => Display::fmt(i, f),
