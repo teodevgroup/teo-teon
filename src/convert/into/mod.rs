@@ -15,3 +15,4 @@ pub mod hash_map;
 pub mod btree_map;
 pub mod index_map;
 pub mod vec;
+pub mod range;
