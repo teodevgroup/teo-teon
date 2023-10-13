@@ -2,6 +2,18 @@ use std::fmt::Display;
 use crate::error::Error;
 use crate::value::Value;
 
+impl<'a> TryInto<&'a Vec<Value>> for &'a Value {
+
+    type Error = Error;
+
+    fn try_into(self) -> Result<&'a Vec<Value>, Self::Error> {
+        match self {
+            Value::Array(vec) => Ok(vec),
+            _ => Err(Error::new(format!("Cannot convert {} into &Array", self.type_hint()))),
+        }
+    }
+}
+
 impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value>, T::Error: Display {
 
     type Error = Error;

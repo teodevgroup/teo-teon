@@ -17,3 +17,4 @@ pub mod index_map;
 pub mod vec;
 pub mod range;
 pub mod regex;
+pub mod enum_variant;
