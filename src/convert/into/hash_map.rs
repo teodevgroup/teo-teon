@@ -35,6 +35,18 @@ impl<T> TryInto<HashMap<String, T>> for Value where T: TryFrom<Value>, T::Error:
     }
 }
 
+impl <'a> TryInto<&'a HashMap<String, Value>> for &'a Value {
+
+    type Error = Error;
+
+    fn try_into(self) -> Result<&'a HashMap<String, Value>, Self::Error> {
+        match self {
+            Value::Dictionary(m) => Ok(m),
+            _ => Err(Error::new(format!("Cannot convert {} into HashMap", self.type_hint()))),
+        }
+    }
+}
+
 impl<'a, T> TryInto<HashMap<String, T>> for &'a Value where T: TryFrom<&'a Value>, T::Error: Display {
 
     type Error = Error;
