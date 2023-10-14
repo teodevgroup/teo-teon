@@ -13,14 +13,26 @@ impl TryInto<i32> for Value {
     }
 }
 
-impl TryInto<i32> for &Value {
+// impl TryInto<i32> for &Value {
+//
+//     type Error = Error;
+//
+//     fn try_into(self) -> Result<i32, Self::Error> {
+//         match self {
+//             Value::Int(b) => Ok(*b),
+//             _ => Err(Error::new(format!("Cannot convert {} into i32", self.type_hint()))),
+//         }
+//     }
+// }
+
+impl TryFrom<&Value> for i32 {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<i32, Self::Error> {
-        match self {
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        match value {
             Value::Int(b) => Ok(*b),
-            _ => Err(Error::new(format!("Cannot convert {} into i32", self.type_hint()))),
+            _ => Err(Error::new(format!("Cannot convert {} into i32", value.type_hint()))),
         }
     }
 }

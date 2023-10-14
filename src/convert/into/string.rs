@@ -13,12 +13,15 @@ impl TryInto<String> for Value {
     }
 }
 
-impl TryInto<String> for &Value {
+impl TryFrom<&Value> for String {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<String, Self::Error> {
-        self.clone().try_into()
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::String(s) => Ok(s.to_owned()),
+            _ => Err(Error::new(format!("Cannot convert {} into String", value.type_hint()))),
+        }
     }
 }
 
