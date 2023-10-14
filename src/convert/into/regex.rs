@@ -8,7 +8,7 @@ impl TryInto<Regex> for Value {
 
     fn try_into(self) -> Result<Regex, Self::Error> {
         match self {
-            Value::RegExp(s) => Ok(s),
+            Value::Regex(s) => Ok(s),
             _ => Err(Error::new(format!("Cannot convert {} into Regex", self.type_hint()))),
         }
     }
@@ -29,7 +29,7 @@ impl<'a> TryInto<&'a Regex> for &'a Value {
 
     fn try_into(self) -> Result<&'a Regex, Self::Error> {
         match self {
-            Value::RegExp(s) => Ok(s),
+            Value::Regex(s) => Ok(s),
             _ => Err(Error::new(format!("Cannot convert {} into &Regex", self.type_hint()))),
         }
     }
@@ -42,7 +42,7 @@ impl TryInto<Option<Regex>> for Value {
     fn try_into(self) -> Result<Option<Regex>, Self::Error> {
         match self {
             Value::Null => Ok(None),
-            Value::RegExp(s) => Ok(Some(s)),
+            Value::Regex(s) => Ok(Some(s)),
             _ => Err(Error::new(format!("Cannot convert {} into Option<Regex>", self.type_hint()))),
         }
     }
@@ -64,7 +64,7 @@ impl<'a> TryInto<Option<&'a Regex>> for &'a Value {
     fn try_into(self) -> Result<Option<&'a Regex>, Self::Error> {
         match self {
             Value::Null => Ok(None),
-            Value::RegExp(s) => Ok(Some(s)),
+            Value::Regex(s) => Ok(Some(s)),
             _ => Err(Error::new(format!("Cannot convert {} into Option<&Regex>", self.type_hint()))),
         }
     }

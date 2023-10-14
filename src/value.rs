@@ -128,9 +128,9 @@ pub enum Value {
     ///
     EnumVariant(EnumVariant),
 
-    /// Represents a Teon RegExp.
+    /// Represents a Teon Regex.
     ///
-    RegExp(Regex),
+    Regex(Regex),
 
     /// Represents a Teon File.
     ///
@@ -429,7 +429,7 @@ impl Value {
 
     pub fn as_regexp(&self) -> Option<&Regex> {
         match self {
-            Value::RegExp(r) => Some(r),
+            Value::Regex(r) => Some(r),
             _ => None,
         }
     }
@@ -511,7 +511,7 @@ impl Value {
                     "EnumVariant"
                 }
             },
-            Value::RegExp(_) => "RegExp",
+            Value::Regex(_) => "RegExp",
             Value::File(_) => "File",
         }
     }
@@ -547,7 +547,7 @@ impl Value {
             Value::Range(_) => false,
             Value::Tuple(_) => false,
             Value::EnumVariant(e) => (e.normal_not()).as_bool().unwrap(),
-            Value::RegExp(_) => false,
+            Value::Regex(_) => false,
             Value::File(_) => false,
         })
     }
@@ -914,7 +914,7 @@ impl PartialEq for Value {
             (Range(s), Range(o)) => s == o,
             (Tuple(s), Tuple(o)) => s == o,
             (EnumVariant(s), EnumVariant(o)) => s == o,
-            (RegExp(s), RegExp(o)) => s.as_str() == o.as_str(),
+            (Regex(s), Regex(o)) => s.as_str() == o.as_str(),
             (File(s), File(o)) => s == o,
             _ => false,
         }
@@ -1008,7 +1008,7 @@ impl Display for Value {
             Value::EnumVariant(e) => {
                 f.write_str(&e.display)
             }
-            Value::RegExp(r) => {
+            Value::Regex(r) => {
                 f.write_str("/")?;
                 f.write_str(&format!("{}", r.as_str().replace("/", "\\/")))?;
                 f.write_str("/")
