@@ -1,7 +1,6 @@
 mod test {
     use itertools::assert_equal;
     use teo_teon::Value;
-    use teo_teon::convert::into::vec;
 
     #[test]
     fn value_ref_into_vec_str() {
