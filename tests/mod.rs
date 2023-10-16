@@ -10,6 +10,7 @@ mod test {
         assert_equal(vec_str, vec!["1", "2"])
     }
 
+    #[test]
     fn value_ref_into_vec_string() {
         let value = Value::Array(vec![Value::String("1".to_owned()), Value::String("2".to_owned())]);
         let value_ref = &value;
