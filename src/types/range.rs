@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use serde::Serialize;
 use crate::value::Value;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Range {
     pub closed: bool,
     pub start: Box<Value>,

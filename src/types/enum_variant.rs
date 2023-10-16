@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::value::Value;
 use crate::result::Result;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct EnumVariant {
     pub value: Box<Value>,
     pub display: String,

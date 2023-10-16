@@ -1,3 +1,16 @@
+use std::collections::HashMap;
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct A {
+    b: B
+}
+
+#[derive(Serialize)]
+struct B {
+    v: HashMap<String, A>
+}
+
 mod test {
     use itertools::assert_equal;
     use teo_teon::Value;
