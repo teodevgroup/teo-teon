@@ -11,8 +11,6 @@ pub mod object_id;
 pub mod date;
 pub mod datetime;
 pub mod usize;
-pub mod hash_map;
-pub mod btree_map;
 pub mod index_map;
 pub mod vec;
 

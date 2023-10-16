@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use serde::Serialize;
 use crate::value::Value;
 
 #[derive(Debug, Clone, PartialEq)]

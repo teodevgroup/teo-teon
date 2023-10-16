@@ -8,7 +8,7 @@ impl<T> From<IndexMap<String, T>> for Value where T: Into<Value> {
         for (k, v) in value {
             retval.insert(k.to_owned(), v.into());
         }
-        Value::IndexDictionary(retval)
+        Value::Dictionary(retval)
     }
 }
 
@@ -20,7 +20,7 @@ impl<T> From<Option<IndexMap<String, T>>> for Value where T: Into<Value> {
             for (k, v) in value {
                 retval.insert(k, v.into());
             }
-            Value::IndexDictionary(retval)
+            Value::Dictionary(retval)
         } else {
             Value::Null
         }

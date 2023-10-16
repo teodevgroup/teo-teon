@@ -34,20 +34,6 @@ impl TryInto<JsonValue> for &Value {
                 }
                 JsonValue::Object(map)
             }
-            Value::BTreeDictionary(val) => {
-                let mut map = JsonMap::new();
-                for (k, v) in val {
-                    map.insert(k.to_string(), v.try_into()?);
-                }
-                JsonValue::Object(map)
-            }
-            Value::IndexDictionary(val) => {
-                let mut map = JsonMap::new();
-                for (k, v) in val {
-                    map.insert(k.to_string(), v.try_into()?);
-                }
-                JsonValue::Object(map)
-            }
             _ => {
                 Err(Error::new(format!("Cannot convert {} into json", self.type_hint())))?
             }

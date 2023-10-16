@@ -2,14 +2,17 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use maplit::hashset;
+use serde::Serialize;
 use serde_json::{Value as JsonValue};
 use crate::error::Error;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct File {
     pub filepath: String,
+    #[serde(rename(serialize = "contentType"))]
     pub content_type: Option<String>,
     pub filename: String,
+    #[serde(rename(serialize = "filenameExt"))]
     pub filename_ext: Option<String>,
 }
 

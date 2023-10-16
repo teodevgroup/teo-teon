@@ -11,6 +11,7 @@ use chrono::{NaiveDate, SecondsFormat};
 use regex::Regex;
 use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
+use serde::Serialize;
 use crate::types::enum_variant::EnumVariant;
 use crate::types::file::File;
 use crate::types::range::Range;
@@ -104,17 +105,9 @@ pub enum Value {
     ///
     Array(Vec<Value>),
 
-    /// Represents a Teon Dictionary.
-    ///
-    Dictionary(HashMap<String, Value>),
-
     /// Represents a Teon btree_dictionary.
     ///
-    BTreeDictionary(BTreeMap<String, Value>),
-
-    /// Represents a Teon index_dictionary.
-    ///
-    IndexDictionary(IndexMap<String, Value>),
+    Dictionary(IndexMap<String, Value>),
 
     /// Represents a Teon Range.
     ///
@@ -340,52 +333,16 @@ impl Value {
         self.as_dictionary().is_some()
     }
 
-    pub fn as_dictionary(&self) -> Option<&HashMap<String, Value>> {
+    pub fn as_dictionary(&self) -> Option<&IndexMap<String, Value>> {
         match self {
             Value::Dictionary(map) => Some(map),
             _ => None,
         }
     }
 
-    pub fn as_dictionary_mut(&mut self) -> Option<&mut HashMap<String, Value>> {
+    pub fn as_dictionary_mut(&mut self) -> Option<&mut IndexMap<String, Value>> {
         match self {
             Value::Dictionary(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn is_btree_dictionary(&self) -> bool {
-        self.as_btree_dictionary().is_some()
-    }
-
-    pub fn as_btree_dictionary(&self) -> Option<&BTreeMap<String, Value>> {
-        match self {
-            Value::BTreeDictionary(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn as_btree_dictionary_mut(&mut self) -> Option<&mut BTreeMap<String, Value>> {
-        match self {
-            Value::BTreeDictionary(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn is_index_dictionary(&self) -> bool {
-        self.as_index_dictionary().is_some()
-    }
-
-    pub fn as_index_dictionary(&self) -> Option<&IndexMap<String, Value>> {
-        match self {
-            Value::IndexDictionary(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    pub fn as_index_dictionary_mut(&mut self) -> Option<&mut IndexMap<String, Value>> {
-        match self {
-            Value::IndexDictionary(map) => Some(map),
             _ => None,
         }
     }
@@ -500,8 +457,6 @@ impl Value {
             Value::DateTime(_) => "DateTime",
             Value::Array(_) => "Array",
             Value::Dictionary(_) => "Dictionary",
-            Value::BTreeDictionary(_) => "BTreeDictionary",
-            Value::IndexDictionary(_) => "IndexDictionary",
             Value::Range(_) => "Range",
             Value::Tuple(_) => "Tuple",
             Value::EnumVariant(e) => {
@@ -542,8 +497,6 @@ impl Value {
             Value::DateTime(_) => false,
             Value::Array(a) => a.is_empty(),
             Value::Dictionary(d) => d.is_empty(),
-            Value::BTreeDictionary(d) => d.is_empty(),
-            Value::IndexDictionary(d) => d.is_empty(),
             Value::Range(_) => false,
             Value::Tuple(_) => false,
             Value::EnumVariant(e) => (e.normal_not()).as_bool().unwrap(),
@@ -909,8 +862,6 @@ impl PartialEq for Value {
             (DateTime(s), DateTime(o)) => s == o,
             (Array(s), Array(o)) => s == o,
             (Dictionary(s), Dictionary(o)) => s == o,
-            (BTreeDictionary(s), BTreeDictionary(o)) => s == o,
-            (IndexDictionary(s), IndexDictionary(o)) => s == o,
             (Range(s), Range(o)) => s == o,
             (Tuple(s), Tuple(o)) => s == o,
             (EnumVariant(s), EnumVariant(o)) => s == o,
@@ -983,12 +934,6 @@ impl Display for Value {
                 f.write_str(&("[".to_string() + a.iter().map(|v| format!("{v}")).join(", ").as_str() + "]"))
             }
             Value::Dictionary(m) => {
-                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", format!("{v}"))).join(", ").as_str() + "}"))
-            }
-            Value::BTreeDictionary(m) => {
-                f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", format!("{v}"))).join(", ").as_str() + "}"))
-            }
-            Value::IndexDictionary(m) => {
                 f.write_str(&("{".to_string() + m.iter().map(|(k, v)| format!("\"{k}\": {}", format!("{v}"))).join(", ").as_str() + "}"))
             }
             Value::Range(r) => Display::fmt(r, f),

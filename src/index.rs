@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::ops;
+use indexmap::IndexMap;
 use super::value::Value;
 
 // Code from this file is inspired from serde json
@@ -59,8 +59,6 @@ impl Index for str {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
         match v {
             Value::Dictionary(map) => map.get(self),
-            Value::BTreeDictionary(map) => map.get(self),
-            Value::IndexDictionary(map) => map.get(self),
             _ => None,
         }
     }
@@ -68,20 +66,16 @@ impl Index for str {
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
         match v {
             Value::Dictionary(map) => map.get_mut(self),
-            Value::BTreeDictionary(map) => map.get_mut(self),
-            Value::IndexDictionary(map) => map.get_mut(self),
             _ => None,
         }
     }
 
     fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
         if let Value::Null = v {
-            *v = Value::Dictionary(HashMap::new());
+            *v = Value::Dictionary(IndexMap::new());
         }
         match v {
             Value::Dictionary(map) => map.entry(self.to_owned()).or_insert(Value::Null),
-            Value::BTreeDictionary(map) => map.entry(self.to_owned()).or_insert(Value::Null),
-            Value::IndexDictionary(map) => map.entry(self.to_owned()).or_insert(Value::Null),
             _ => panic!("cannot access key {:?} in Teon {}", self, v.type_hint()),
         }
     }
