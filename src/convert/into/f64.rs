@@ -82,7 +82,7 @@ impl TryFrom<Value> for Option<f64> {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Float(i) => Ok(Some(i)),
+            Value::Float(f) => Ok(Some(f)),
             _ => Err(Error::new(format!("Cannot convert {} into Option<f64>", value.type_hint()))),
         }
     }
@@ -94,7 +94,7 @@ impl TryFrom<&Value> for Option<f64> {
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Float(i) => Ok(Some(*i)),
+            Value::Float(f) => Ok(Some(*f)),
             _ => Err(Error::new(format!("Cannot convert {} into Option<i32>", value.type_hint()))),
         }
     }
