@@ -1,5 +1,5 @@
 use serde::{Serialize, Serializer};
-use serde::ser::{SerializeMap, SerializeStruct};
+use serde::ser::{SerializeMap};
 use chrono::SecondsFormat;
 use crate::Value;
 
