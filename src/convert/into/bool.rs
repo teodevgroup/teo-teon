@@ -1,42 +1,29 @@
 use crate::error::Error;
 use crate::value::Value;
 
-// impl TryInto<bool> for Value {
-
-//     type Error = Error;
-
-//     fn try_into(self) -> Result<bool, Self::Error> {
-//         match self {
-//             Value::Bool(b) => Ok(b),
-//             _ => Err(Error::new(format!("Cannot convert {} into bool", self.type_hint()))),
-//         }
-//     }
-// }
-
-impl TryInto<bool> for &Value {
+impl TryFrom<&Value> for bool {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<bool, Self::Error> {
-        match self {
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        match value {
             Value::Bool(b) => Ok(*b),
-            _ => Err(Error::new(format!("Cannot convert {} into bool", self.type_hint()))),
+            _ => Err(Error::new(format!("Cannot convert {} into bool", value.type_hint()))),
         }
     }
 }
 
-// impl TryInto<Option<bool>> for Value {
+impl TryFrom<Value> for bool {
 
-//     type Error = Error;
+    type Error = Error;
 
-//     fn try_into(self) -> Result<Option<bool>, Self::Error> {
-//         match self {
-//             Value::Null => Ok(None),
-//             Value::Bool(b) => Ok(Some(b)),
-//             _ => Err(Error::new(format!("Cannot convert {} into Option<bool>", self.type_hint()))),
-//         }
-//     }
-// }
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Bool(b) => Ok(b),
+            _ => Err(Error::new(format!("Cannot convert {} into bool", value.type_hint()))),
+        }
+    }
+}
 
 impl TryFrom<Value> for Option<bool> {
 
@@ -50,19 +37,6 @@ impl TryFrom<Value> for Option<bool> {
         }
     }
 }
-
-// impl TryInto<Option<bool>> for &Value {
-
-//     type Error = Error;
-
-//     fn try_into(self) -> Result<Option<bool>, Self::Error> {
-//         match self {
-//             Value::Null => Ok(None),
-//             Value::Bool(b) => Ok(Some(*b)),
-//             _ => Err(Error::new(format!("Cannot convert {} into Option<bool>", self.type_hint()))),
-//         }
-//     }
-// }
 
 impl TryFrom<&Value> for Option<bool> {
 
