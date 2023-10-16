@@ -20,7 +20,7 @@ impl TryFrom<&Value> for NaiveDate {
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Date(b) => Ok(b.clone()),
+            Value::Date(b) => Ok(*b),
             _ => Err(Error::new(format!("Cannot convert {} into NaiveDate", value.type_hint()))),
         }
     }
@@ -47,7 +47,7 @@ impl TryFrom<&Value> for Option<NaiveDate> {
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
             Value::Null => Ok(None),
-            Value::Date(b) => Ok(Some(b.clone())),
+            Value::Date(b) => Ok(Some(*b)),
             _ => Err(Error::new(format!("Cannot convert {} into Option<NaiveDate>", value.type_hint()))),
         }
     }
