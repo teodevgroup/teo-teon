@@ -2,70 +2,79 @@ use regex::Regex;
 use crate::error::Error;
 use crate::value::Value;
 
-impl TryInto<Regex> for Value {
+
+impl TryFrom<Value> for Regex {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<Regex, Self::Error> {
-        match self {
-            Value::Regex(s) => Ok(s),
-            _ => Err(Error::new(format!("Cannot convert {} into Regex", self.type_hint()))),
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Regex(r) => Ok(r),
+            _ => Err(Error::new(format!("Cannot convert {} into Regex", value.type_hint()))),
         }
     }
 }
 
-impl TryInto<Regex> for &Value {
+impl TryFrom<&Value> for Regex {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<Regex, Self::Error> {
-        self.clone().try_into()
-    }
-}
-
-impl<'a> TryInto<&'a Regex> for &'a Value {
-
-    type Error = Error;
-
-    fn try_into(self) -> Result<&'a Regex, Self::Error> {
-        match self {
-            Value::Regex(s) => Ok(s),
-            _ => Err(Error::new(format!("Cannot convert {} into &Regex", self.type_hint()))),
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Regex(r) => Ok(r.to_owned()),
+            _ => Err(Error::new(format!("Cannot convert {} into Regex", value.type_hint()))),
         }
     }
 }
 
-impl TryInto<Option<Regex>> for Value {
+impl<'a> TryFrom<&'a Value> for &'a Regex {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<Regex>, Self::Error> {
-        match self {
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Regex(r) => Ok(r),
+            _ => Err(Error::new(format!("Cannot convert {} into &Regex", value.type_hint()))),
+        }
+    }
+}
+
+impl TryFrom<Value> for Option<Regex> {
+
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
             Value::Null => Ok(None),
-            Value::Regex(s) => Ok(Some(s)),
-            _ => Err(Error::new(format!("Cannot convert {} into Option<Regex>", self.type_hint()))),
+            Value::Regex(r) => Ok(Some(r)),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<Regex>", value.type_hint()))),
         }
     }
 }
 
-impl TryInto<Option<Regex>> for &Value {
+
+impl TryFrom<&Value> for Option<Regex> {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<Regex>, Self::Error> {
-        self.clone().try_into()
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Null => Ok(None),
+            Value::Regex(_) => value.clone().try_into(),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<Regex>", value.type_hint()))),
+        }
     }
 }
 
-impl<'a> TryInto<Option<&'a Regex>> for &'a Value {
+impl<'a> TryFrom<&'a Value> for Option<&'a Regex> {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<&'a Regex>, Self::Error> {
-        match self {
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
             Value::Null => Ok(None),
-            Value::Regex(s) => Ok(Some(s)),
-            _ => Err(Error::new(format!("Cannot convert {} into Option<&Regex>", self.type_hint()))),
+            Value::Regex(r) => Ok(Some(r)),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<&Regex>", value.type_hint()))),
         }
     }
 }

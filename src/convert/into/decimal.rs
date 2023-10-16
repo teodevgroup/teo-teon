@@ -64,6 +64,33 @@ impl TryFrom<&Value> for Option<BigDecimal> {
     }
 }
 
+//-------------------- test --------------------
+// impl<'a> TryFrom<Value> for &'a BigDecimal {
+
+//     type Error = Error;
+
+//     fn try_from(value: Value) -> Result<Self, Self::Error> {
+//         match value {
+//             Value::BigDecimal(d) => Ok(d),
+//             _ => Err(Error::new(format!("Cannot convert {} into &BigDecimal", value.type_hint()))),
+//         }
+//     }
+// }
+
+// impl TryFrom<Value> for Option<&BigDecimal> {
+
+//     type Error = Error;
+
+//     fn try_from(value: Value) -> Result<Self, Self::Error> {
+//         match value {
+//             Value::Null => Ok(None),
+//             Value::Decimal(d) => Ok(Some(&d)),
+//             _ => Err(Error::new(format!("Cannot convert {} into Option<&BigDecimal>", value.type_hint()))),
+//         }
+//     }
+// }
+//-------------------- test --------------------
+
 impl<'a> TryFrom<&'a Value> for Option<&'a BigDecimal> {
 
     type Error = Error;

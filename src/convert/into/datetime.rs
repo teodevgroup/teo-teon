@@ -26,6 +26,33 @@ impl TryFrom<Value> for DateTime<Utc> {
     }
 }
 
+//-------------------- test --------------------
+// impl<'a> TryFrom<Value> for &'a DateTime<Utc> {
+
+//     type Error = Error;
+
+//     fn try_from(value: Value) -> Result<Self, Self::Error> {
+//         match value {
+//             Value::DateTime(d) => Ok(d),
+//             _ => Err(Error::new(format!("Cannot convert {} into &DateTime<Utc>", value.type_hint()))),
+//         }
+//     }
+// }
+
+// impl<'a> TryFrom<&'a Value> for &'a DateTime<Utc> {
+
+//     type Error = Error;
+
+//     fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+//         match value {
+//             Value::DateTime(d) => Ok(d),
+//             _ => Err(Error::new(format!("Cannot convert {} into &DateTime<Utc>", value.type_hint()))),
+//         }
+//     }
+// }
+
+//-------------------- test --------------------
+
 impl<'a> TryFrom<&'a Value> for &'a DateTime<Utc> {
 
     type Error = Error;

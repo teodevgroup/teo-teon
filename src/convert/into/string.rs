@@ -57,7 +57,7 @@ impl TryFrom<&Value> for Option<String> {
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
             Value::Null => Ok(None),
-            Value::String(s) => value.clone().try_into(),
+            Value::String(_) => value.clone().try_into(),
             _ => Err(Error::new(format!("Cannot convert {} into Option<String>", value.type_hint()))),
         }
     }
