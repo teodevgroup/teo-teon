@@ -1,5 +1,5 @@
 use std::iter::Cloned;
-use crate::error::Error;
+use teo_result::Error;
 use crate::Value;
 
 impl<T0, T1> TryFrom<Value> for (T0, T1) where T0: TryFrom<Value, Error = Error>, T1: TryFrom<Value, Error = Error> {

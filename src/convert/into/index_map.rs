@@ -1,6 +1,6 @@
 use std::fmt::Display;
 use indexmap::IndexMap;
-use crate::error::Error;
+use teo_result::Error;
 use crate::value::Value;
 
 impl<T> TryInto<IndexMap<String, T>> for Value where T: TryFrom<Value>, T::Error: Display {

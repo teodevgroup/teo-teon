@@ -1,4 +1,4 @@
-use crate::error::Error;
+use teo_result::Error;
 use crate::types::range::Range;
 use crate::value::Value;
 

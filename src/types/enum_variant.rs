@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::ops::{BitAnd, BitOr, BitXor, Not};
 use bigdecimal::Zero;
 use serde::Serialize;
-use crate::error::Error;
+use teo_result::Error;
 use crate::value::Value;
-use crate::result::Result;
+use teo_result::Result;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct EnumVariant {

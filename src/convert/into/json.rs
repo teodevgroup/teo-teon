@@ -1,6 +1,6 @@
 use serde_json::{Value as JsonValue, Number as JsonNumber, Map as JsonMap, json};
 use chrono::SecondsFormat;
-use crate::error::Error;
+use teo_result::Error;
 use crate::value::Value;
 
 impl TryInto<JsonValue> for &Value {

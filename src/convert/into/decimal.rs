@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use crate::error::Error;
+use teo_result::Error;
 use crate::value::Value;
 
 impl TryFrom<&Value> for BigDecimal {

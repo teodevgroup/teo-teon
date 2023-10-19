@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use crate::error::Error;
+use teo_result::Error;
 use crate::value::Value;
 
 impl<'a> TryInto<&'a Vec<Value>> for &'a Value {

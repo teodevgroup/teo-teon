@@ -4,7 +4,7 @@ use itertools::Itertools;
 use maplit::hashset;
 use serde::Serialize;
 use serde_json::{Value as JsonValue};
-use crate::error::Error;
+use teo_result::Error;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct File {

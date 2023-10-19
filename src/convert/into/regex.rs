@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::error::Error;
+use teo_result::Error;
 use crate::value::Value;
 
 impl TryInto<Regex> for Value {

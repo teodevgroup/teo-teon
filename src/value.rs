@@ -14,8 +14,7 @@ use crate::types::enum_variant::EnumVariant;
 use crate::types::file::File;
 use crate::types::range::Range;
 use super::index::Index;
-use super::error::Error;
-use super::result::Result;
+use teo_result::{Error, Result};
 
 // Code from this file is inspired from serde json
 // https://github.com/serde-rs/json/blob/master/src/value/mod.rs
