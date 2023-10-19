@@ -16,3 +16,4 @@ pub mod vec;
 pub mod range;
 pub mod regex;
 pub mod enum_variant;
+pub mod tuple;
