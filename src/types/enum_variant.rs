@@ -16,6 +16,14 @@ pub struct EnumVariant {
 
 impl EnumVariant {
 
+    pub fn into_string(self) -> Result<String> {
+        self.value.as_ref().try_into()
+    }
+
+    pub fn into_i32(self) -> Result<i32> {
+        self.value.as_ref().try_into()
+    }
+
     pub fn normal_not(&self) -> Value {
         Value::Bool(match self.value.as_ref() {
             Value::Int(n) => n.is_zero(),
