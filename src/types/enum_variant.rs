@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap};
 use std::ops::{BitAnd, BitOr, BitXor, Not};
 use bigdecimal::Zero;
 use serde::Serialize;
@@ -10,8 +10,8 @@ use teo_result::Result;
 pub struct EnumVariant {
     pub value: Box<Value>,
     pub display: String,
-    pub path: Vec<usize>,
-    pub args: Option<HashMap<String, Value>>,
+    pub path: Vec<String>,
+    pub args: Option<BTreeMap<String, Value>>,
 }
 
 impl EnumVariant {
