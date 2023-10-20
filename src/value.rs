@@ -431,6 +431,25 @@ impl Value {
         }
     }
 
+    pub fn into_vec<T>(self) -> Result<Vec<T>> where T: TryFrom<Value>, T::Error: Display {
+        match self {
+            Value::Array(array) => {
+                let mut retval = vec![];
+                for v in array {
+                    match T::try_from(v) {
+                        Ok(v) => retval.push(v),
+                        Err(e) => Err(Error::new(format!("{}", e)))?,
+                    }
+                }
+                Ok(retval)
+            },
+            _ => match T::try_from(self) {
+                Ok(v) => Ok(vec![v]),
+                Err(e) => Err(Error::new(format!("{}", e))),
+            }
+        }
+    }
+
     /// Takes the value out of the `Value`, leaving a `Null` in its place.
     ///
     pub fn take(&mut self) -> Value {
