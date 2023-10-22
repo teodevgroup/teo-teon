@@ -520,6 +520,30 @@ impl Value {
             Value::File(_) => false,
         })
     }
+
+    pub fn and<'a>(&'a self, rhs: &'a Value) -> &'a Value {
+        if self.normal_not().is_false() {
+            rhs
+        } else {
+            self
+        }
+    }
+
+    pub fn or<'a>(&'a self, rhs: &'a Value) -> &'a Value {
+        if self.normal_not().is_false() {
+            self
+        } else {
+            rhs
+        }
+    }
+
+    pub fn is_false(&self) -> bool {
+        self.is_bool() && self.as_bool().unwrap() == false
+    }
+
+    pub fn is_true(&self) -> bool {
+        self.is_bool() && self.as_bool().unwrap() == true
+    }
 }
 
 impl Default for Value {
