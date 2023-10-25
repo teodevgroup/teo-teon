@@ -204,12 +204,12 @@ macro_rules! teon {
     };
 
     ({}) => {
-        $crate::value::Value::Dictionary(std::collections::HashMap::new())
+        $crate::value::Value::Dictionary(indexmap::IndexMap::new())
     };
 
    ({ $($tt:tt)+ }) => {
         $crate::value::Value::Dictionary({
-            let mut map = std::collections::HashMap::new();
+            let mut map = indexmap::IndexMap::new();
             teon!(@object map () ($($tt)+) ($($tt)+));
             map
         })
