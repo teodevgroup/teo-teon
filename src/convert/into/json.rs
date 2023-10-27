@@ -3,12 +3,12 @@ use chrono::SecondsFormat;
 use teo_result::Error;
 use crate::value::Value;
 
-impl TryInto<JsonValue> for &Value {
+impl TryFrom<&Value> for JsonValue {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<JsonValue, Self::Error> {
-        Ok(match self {
+    fn try_from(value: &Value) -> Result<JsonValue, Self::Error> {
+        Ok(match value {
             Value::Null => JsonValue::Null,
             Value::ObjectId(val) => JsonValue::String(val.to_hex()),
             Value::Bool(val) => JsonValue::Bool(*val),
@@ -35,17 +35,17 @@ impl TryInto<JsonValue> for &Value {
                 JsonValue::Object(map)
             }
             _ => {
-                Err(Error::new(format!("Cannot convert {} into json", self.type_hint())))?
+                Err(Error::new(format!("Cannot convert {} into json", value.type_hint())))?
             }
         })
     }
 }
 
-impl TryInto<JsonValue> for Value {
+impl TryFrom<Value> for JsonValue {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<JsonValue, Self::Error> {
-        (&self).try_into()
+    fn try_from(value: Value) -> Result<JsonValue, Self::Error> {
+        (&value).try_into()
     }
 }
