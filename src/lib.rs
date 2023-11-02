@@ -1,3 +1,5 @@
+pub extern crate indexmap;
+
 pub mod types;
 pub mod value;
 pub mod convert;
