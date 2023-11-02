@@ -15,8 +15,8 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 chrono = { version = "0.4.31", features = ["serde", "wasmbind"] }
 regex = "1.10"
 bigdecimal = "=0.3.1"
-bson = { version = "2.6.0", features = ["chrono-0_4", "serde_with"] }
+bson = { version = "2.7.0", features = ["chrono-0_4", "serde_with"] }
 getrandom = { version = "0.2.10", features = ["js"] }
-indexmap = "2.0.2"
+indexmap = "2.1.0"
 maplit = "1.0.2"
 itertools = "0.11.0"
