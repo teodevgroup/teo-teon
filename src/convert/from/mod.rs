@@ -13,12 +13,4 @@ pub mod datetime;
 pub mod usize;
 pub mod index_map;
 pub mod vec;
-
-use crate::value::Value;
-
-impl From<&Value> for Value {
-
-    fn from(v: &Value) -> Self {
-        v.to_owned()
-    }
-}
+pub mod value;
