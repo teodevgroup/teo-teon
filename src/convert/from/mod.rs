@@ -14,3 +14,4 @@ pub mod usize;
 pub mod index_map;
 pub mod vec;
 pub mod value;
+pub mod enum_variant;

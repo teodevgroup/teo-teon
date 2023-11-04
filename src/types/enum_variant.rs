@@ -20,6 +20,14 @@ impl EnumVariant {
         self.value.as_ref().try_into()
     }
 
+    pub fn to_string(&self) -> Result<String> {
+        if let Some(str) = self.value.as_ref().as_str() {
+            Ok(str.to_owned())
+        } else {
+            Err(Error::new("enum variant value is not string"))
+        }
+    }
+
     pub fn into_i32(self) -> Result<i32> {
         self.value.as_ref().try_into()
     }
