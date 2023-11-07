@@ -15,6 +15,7 @@ use crate::types::file::File;
 use crate::types::range::Range;
 use super::index::Index;
 use teo_result::{Error, Result};
+use crate::types::option_variant::OptionVariant;
 
 // Code from this file is inspired from serde json
 // https://github.com/serde-rs/json/blob/master/src/value/mod.rs
@@ -117,6 +118,10 @@ pub enum Value {
     /// Represents a Teon enum variant value.
     ///
     EnumVariant(EnumVariant),
+
+    /// Represents a Teon option variant.
+    ///
+    OptionVariant(OptionVariant),
 
     /// Represents a Teon Regex.
     ///
@@ -377,6 +382,17 @@ impl Value {
         }
     }
 
+    pub fn is_option_variant(&self) -> bool {
+        self.as_option_variant().is_some()
+    }
+
+    pub fn as_option_variant(&self) -> Option<&OptionVariant> {
+        match self {
+            Value::OptionVariant(e) => Some(e),
+            _ => None,
+        }
+    }
+
     pub fn is_regexp(&self) -> bool {
         self.as_regexp().is_some()
     }
@@ -475,13 +491,8 @@ impl Value {
             Value::Dictionary(_) => "Dictionary",
             Value::Range(_) => "Range",
             Value::Tuple(_) => "Tuple",
-            Value::EnumVariant(e) => {
-                if e.value.is_any_int() {
-                    "OptionEnumVariant"
-                } else {
-                    "EnumVariant"
-                }
-            },
+            Value::EnumVariant(e) => "EnumVariant",
+            Value::OptionVariant(o) => "OptionVariant",
             Value::Regex(_) => "RegExp",
             Value::File(_) => "File",
         }
@@ -515,7 +526,8 @@ impl Value {
             Value::Dictionary(d) => d.is_empty(),
             Value::Range(_) => false,
             Value::Tuple(_) => false,
-            Value::EnumVariant(e) => (e.normal_not()).as_bool().unwrap(),
+            Value::EnumVariant(e) => e.normal_not(),
+            Value::OptionVariant(o) => o.normal_not(),
             Value::Regex(_) => false,
             Value::File(_) => false,
         })
@@ -553,12 +565,8 @@ impl Default for Value {
 }
 
 fn check_enum_operands(name: &str, lhs: &Value, rhs: &Value) -> Result<()> {
-    if let (Some(l), Some(r)) = (lhs.as_enum_variant(), rhs.as_enum_variant()) {
-        if l.is_option() && r.is_option() && l.path == r.path {
-            Ok(())
-        } else {
-            Err(operands_error_message(lhs, rhs, name))
-        }
+    if let (Some(_), Some(_)) = (lhs.as_option_variant(), rhs.as_option_variant()) {
+        Ok(())
     } else {
         Err(operands_error_message(lhs, rhs, name))
     }
@@ -809,9 +817,9 @@ impl BitAnd for &Value {
                 check_operands(&self, rhs, "bitand", |v| v.is_any_int())?;
                 Value::Int64(v & rhs.as_int64().unwrap())
             },
-            Value::EnumVariant(e) => {
+            Value::OptionVariant(e) => {
                 check_enum_operands("bitand", self, rhs)?;
-                Value::EnumVariant((e & rhs.as_enum_variant().unwrap())?)
+                Value::OptionVariant((e & rhs.as_option_variant().unwrap())?)
             }
             _ => Err(operand_error_message(self, "bitand"))?,
         })
@@ -832,9 +840,9 @@ impl BitXor for &Value {
                 check_operands(&self, rhs, "bitxor", |v| v.is_any_int())?;
                 Value::Int64(v ^ rhs.as_int64().unwrap())
             },
-            Value::EnumVariant(e) => {
+            Value::OptionVariant(e) => {
                 check_enum_operands("bitxor", self, rhs)?;
-                Value::EnumVariant((e ^ rhs.as_enum_variant().unwrap())?)
+                Value::OptionVariant((e ^ rhs.as_option_variant().unwrap())?)
             }
             _ => Err(operand_error_message(self, "bitxor"))?,
         })
@@ -855,9 +863,9 @@ impl BitOr for &Value {
                 check_operands(&self, rhs, "bitor", |v| v.is_any_int())?;
                 Value::Int64(v | rhs.as_int64().unwrap())
             },
-            Value::EnumVariant(e) => {
+            Value::OptionVariant(e) => {
                 check_enum_operands("bitor", self, rhs)?;
-                Value::EnumVariant((e | rhs.as_enum_variant().unwrap())?)
+                Value::OptionVariant((e | rhs.as_option_variant().unwrap())?)
             }
             _ => Err(operand_error_message(self, "bitor"))?,
         })
@@ -876,7 +884,7 @@ impl Not for &Value {
             Value::Float32(val) => Value::Float32(-*val),
             Value::Float(val) => Value::Float(-*val),
             Value::Decimal(val) => Value::Decimal(val.neg()),
-            Value::EnumVariant(e) => Value::EnumVariant(e.not()?),
+            Value::OptionVariant(e) => Value::OptionVariant(e.not()),
             _ => Err(operand_error_message(self, "bitneg"))?,
         })
     }
@@ -905,6 +913,7 @@ impl PartialEq for Value {
             (Range(s), Range(o)) => s == o,
             (Tuple(s), Tuple(o)) => s == o,
             (EnumVariant(s), EnumVariant(o)) => s == o,
+            (OptionVariant(s), OptionVariant(o)) => s.value == o.value,
             (Regex(s), Regex(o)) => s.as_str() == o.as_str(),
             (File(s), File(o)) => s == o,
             _ => false,
@@ -933,6 +942,7 @@ impl PartialOrd for Value {
             (Array(s), Array(o)) => s.partial_cmp(o),
             (Tuple(s), Tuple(o)) => s.partial_cmp(o),
             (EnumVariant(s), EnumVariant(o)) => s.value.partial_cmp(&o.value),
+            (OptionVariant(s), OptionVariant(o)) => s.value.partial_cmp(&o.value),
             _ => None,
         }
     }
@@ -991,7 +1001,10 @@ impl Display for Value {
                 f.write_str(")")
             }
             Value::EnumVariant(e) => {
-                f.write_str(&e.display)
+                f.write_str(&format!(".{}", &e.value))
+            }
+            Value::OptionVariant(o) => {
+                f.write_str(&o.display)
             }
             Value::Regex(r) => {
                 f.write_str("/")?;

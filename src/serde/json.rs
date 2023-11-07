@@ -51,6 +51,11 @@ impl Serialize for Value {
                 map.serialize_entry("$enumVariant", &e)?;
                 map.end()
             }
+            Value::OptionVariant(o) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("$optionVariant", &o)?;
+                map.end()
+            }
             Value::Regex(r) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_entry("$regex", &r.to_string())?;
