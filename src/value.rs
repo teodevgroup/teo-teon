@@ -491,8 +491,8 @@ impl Value {
             Value::Dictionary(_) => "Dictionary",
             Value::Range(_) => "Range",
             Value::Tuple(_) => "Tuple",
-            Value::EnumVariant(e) => "EnumVariant",
-            Value::OptionVariant(o) => "OptionVariant",
+            Value::EnumVariant(_) => "EnumVariant",
+            Value::OptionVariant(_) => "OptionVariant",
             Value::Regex(_) => "RegExp",
             Value::File(_) => "File",
         }

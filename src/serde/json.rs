@@ -9,10 +9,26 @@ impl Serialize for Value {
         match self {
             Value::Null => serializer.serialize_none(),
             Value::Bool(b) => serializer.serialize_bool(*b),
-            Value::Int(i) => serializer.serialize_i32(*i),
-            Value::Int64(i) => serializer.serialize_i64(*i),
-            Value::Float32(f) => serializer.serialize_f32(*f),
-            Value::Float(f) => serializer.serialize_f64(*f),
+            Value::Int(i) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("$int", i)?;
+                map.end()
+            },
+            Value::Int64(i) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("$int64", i)?;
+                map.end()
+            },
+            Value::Float32(f) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("$float32", f)?;
+                map.end()
+            },
+            Value::Float(f) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("$float", f)?;
+                map.end()
+            },
             Value::Decimal(d) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_entry("$decimal", &d.normalized().to_string())?;
