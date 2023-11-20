@@ -63,3 +63,16 @@ impl<'a> TryFrom<&'a Value> for Option<&'a EnumVariant> {
         }
     }
 }
+
+impl<'a> TryFrom<&'a Value> for Option<EnumVariant> {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Option<EnumVariant>, Self::Error> {
+        match value {
+            Value::Null => Ok(None),
+            Value::EnumVariant(s) => Ok(Some(s.clone())),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<EnumVariant>", value.type_hint()))),
+        }
+    }
+}
