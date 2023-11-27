@@ -51,3 +51,28 @@ impl TryInto<Option<ObjectId>> for &Value {
         }
     }
 }
+
+impl<'a> TryFrom<&'a Value> for &'a ObjectId {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::ObjectId(b) => Ok(b),
+            _ => Err(Error::new(format!("Cannot convert {} into &ObjectId", value.type_hint()))),
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a Value> for Option<&'a ObjectId> {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Null => Ok(None),
+            Value::ObjectId(b) => Ok(Some(b)),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<&ObjectId>", value.type_hint()))),
+        }
+    }
+}

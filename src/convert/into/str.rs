@@ -1,8 +1,6 @@
 use teo_result::Error;
 use crate::value::Value;
 
-
-
 impl<'a> TryFrom<&'a Value> for &'a str {
 
     type Error = Error;
@@ -15,15 +13,15 @@ impl<'a> TryFrom<&'a Value> for &'a str {
     }
 }
 
-impl<'a> TryInto<Option<&'a str>> for &'a Value {
+impl<'a> TryFrom<&'a Value> for Option<&'a str> {
 
     type Error = Error;
 
-    fn try_into(self) -> Result<Option<&'a str>, Self::Error> {
-        match self {
+    fn try_from(value: &'a Value) -> Result<Option<&'a str>, Self::Error> {
+        match value {
             Value::Null => Ok(None),
             Value::String(s) => Ok(Some(s.as_str())),
-            _ => Err(Error::new(format!("Cannot convert {} into Option<&str>", self.type_hint()))),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<&str>", value.type_hint()))),
         }
     }
 }

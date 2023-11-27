@@ -51,3 +51,27 @@ impl TryFrom<&Value> for Option<bool> {
     }
 }
 
+impl<'a> TryFrom<&'a Value> for &'a bool {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Bool(b) => Ok(b),
+            _ => Err(Error::new(format!("Cannot convert {} into &bool", value.type_hint()))),
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a Value> for Option<&'a bool> {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Null => Ok(None),
+            Value::Bool(b) => Ok(Some(b)),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<&bool>", value.type_hint()))),
+        }
+    }
+}

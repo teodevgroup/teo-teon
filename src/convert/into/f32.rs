@@ -51,3 +51,27 @@ impl TryFrom<&Value> for Option<f32> {
     }
 }
 
+impl<'a> TryFrom<&'a Value> for &'a f32 {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Float32(b) => Ok(b),
+            _ => Err(Error::new(format!("Cannot convert {} into &f32", value.type_hint()))),
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a Value> for Option<&'a f32> {
+
+    type Error = Error;
+
+    fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Null => Ok(None),
+            Value::Float32(b) => Ok(Some(b)),
+            _ => Err(Error::new(format!("Cannot convert {} into Option<&f32>", value.type_hint()))),
+        }
+    }
+}
