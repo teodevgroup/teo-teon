@@ -49,6 +49,8 @@ impl TryFrom<&JsonValue> for File {
                 content_type: if let Some(content_type) = object.get("contentType") {
                     if let Some(content_type) = content_type.as_str() {
                         Some(content_type.to_owned())
+                    } else if content_type.is_null() {
+                        None
                     } else {
                         Err(Error::new(format!("Cannot convert json value to file, invalid value at `contentType`, expect string")))?
                     }
@@ -67,6 +69,8 @@ impl TryFrom<&JsonValue> for File {
                 filename_ext: if let Some(filename_ext) = object.get("filenameExt") {
                     if let Some(filename_ext) = filename_ext.as_str() {
                         Some(filename_ext.to_owned())
+                    } else if filename_ext.is_null() {
+                        None
                     } else {
                         Err(Error::new(format!("Cannot convert json value to file, invalid value at `filenameExt`, expect string")))?
                     }
