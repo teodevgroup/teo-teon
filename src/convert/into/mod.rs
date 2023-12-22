@@ -19,3 +19,4 @@ pub mod enum_variant;
 pub mod option_variant;
 pub mod tuple;
 pub mod value;
+pub mod file;
