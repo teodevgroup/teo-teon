@@ -1,6 +1,6 @@
 [package]
 name = "teo-teon"
-version = "0.0.65"
+version = "0.1.0"
 edition = "2021"
 description = "Object notation for Teo."
 license = "Apache-2.0"
@@ -9,7 +9,7 @@ documentation = "https://teocloud.io/docs"
 repository = "https://github.com/teocloud/teo-teon"
 
 [dependencies]
-teo-result = { version = "0.0.65" }
+teo-result = "0.1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 chrono = { version = "0.4.31", features = ["serde", "wasmbind"] }
