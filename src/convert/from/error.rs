@@ -24,7 +24,7 @@ impl From<&Error> for Value {
             "message".to_string() => Value::String(value.message.clone()),
         });
         if fields.is_some() {
-            retval.as_dictionary_mut().unwrap().insert("fields".to_owned(), fields.unwrap());
+            retval.as_dictionary_mut().unwrap().insert("errors".to_owned(), fields.unwrap());
         }
         retval
     }
