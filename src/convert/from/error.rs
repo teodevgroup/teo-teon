@@ -12,7 +12,7 @@ impl From<Error> for Value {
 impl From<&Error> for Value {
 
     fn from(value: &Error) -> Value {
-        let fields = value.fields.as_ref().map(|f| {
+        let errors = value.errors.as_ref().map(|f| {
             let mut result = indexmap! {};
             for (k, v) in f {
                 result.insert(k.to_string(), Value::String(v.to_string()));
@@ -23,8 +23,8 @@ impl From<&Error> for Value {
             "type".to_string() => Value::String(value.title().to_string()),
             "message".to_string() => Value::String(value.message.clone()),
         });
-        if fields.is_some() {
-            retval.as_dictionary_mut().unwrap().insert("errors".to_owned(), fields.unwrap());
+        if errors.is_some() {
+            retval.as_dictionary_mut().unwrap().insert("errors".to_owned(), errors.unwrap());
         }
         retval
     }
