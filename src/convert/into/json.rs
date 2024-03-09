@@ -34,6 +34,9 @@ impl TryFrom<&Value> for JsonValue {
                 }
                 JsonValue::Object(map)
             }
+            Value::EnumVariant(val) => {
+                JsonValue::String(val.value.clone())
+            }
             _ => {
                 Err(Error::new(format!("Cannot convert {} into json", value.type_hint())))?
             }
