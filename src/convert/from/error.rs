@@ -20,7 +20,7 @@ impl From<&Error> for Value {
             Value::Dictionary(result)
         }) ;
         let mut retval = Value::Dictionary(indexmap! {
-            "type".to_string() => Value::String(value.title().to_string()),
+            "type".to_string() => Value::String(value.inferred_title().to_string()),
             "message".to_string() => Value::String(value.message.clone()),
         });
         if errors.is_some() {
